@@ -5,13 +5,15 @@
 <h1 align="center">DdcSwitch</h1>
 
 <p align="center">
-  Schalten Sie den Eingang Ihres Monitors direkt aus Windows um – per Tastenkombination<br>
-  oder automatisch, kurz bevor Windows herunterfährt.
+  Schalten Sie den Eingang Ihres Monitors direkt aus Windows oder macOS um – per Tastenkombination<br>
+  oder automatisch, kurz bevor der Computer herunterfährt.
 </p>
 
 <p align="center">
   <img alt="Windows 10 | 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?logo=windows&logoColor=white">
+  <img alt="macOS 13+" src="https://img.shields.io/badge/macOS-13%2B-000000?logo=apple&logoColor=white">
   <img alt="In Rust geschrieben" src="https://img.shields.io/badge/Rust-stable-B7410E?logo=rust&logoColor=white">
+  <img alt="Swift and SwiftUI" src="https://img.shields.io/badge/Swift-SwiftUI-F05138?logo=swift&logoColor=white">
   <a href="../../LICENSE"><img alt="Lizenz: MIT" src="https://img.shields.io/badge/license-MIT-2EA44F"></a>
   <img alt="10 Sprachen" src="https://img.shields.io/badge/languages-10-8A63D2">
 </p>
@@ -36,7 +38,8 @@ Ein Monitor, zwei Rechner – etwa ein Windows-PC an HDMI und ein MacBook an USB
 **DdcSwitch** spricht mit dem Monitor über [DDC/CI](https://en.wikipedia.org/wiki/Display_Data_Channel), denselben Kanal, den auch das Bildschirmmenü nutzt. Ein Druck auf die Tastenkombination schaltet um, und wenn Sie Windows herunterfahren, übergibt DdcSwitch den Bildschirm automatisch an den anderen Rechner.
 
 <p align="center">
-  <img src="../images/settings-de.png" width="700" alt="Einstellungsfenster von DdcSwitch">
+  <img src="../images/settings-de.png" width="410" alt="Einstellungsfenster von DdcSwitch (Windows)">
+  <img src="../images/settings-macos.png" width="392" alt="Einstellungsfenster von DdcSwitch (macOS)">
 </p>
 
 ## Funktionen
@@ -137,6 +140,49 @@ Optionen: --monitor N, --config <path>
 - **Der falsche Monitor wird umgeschaltet.** Wählen Sie den Monitor unter *Einstellungen* aus und klicken Sie auf *OK*. Sein Name wird gespeichert, sodass der richtige Monitor auch dann gefunden wird, wenn sich die Nummerierung ändert.
 - **Hat das Umschalten beim Herunterfahren geklappt?** Öffnen Sie nach dem nächsten Start das Protokoll über das Tray-Menü. Dort steht, welche Art des Herunterfahrens erkannt wurde und wie das Umschalten ausging.
 - **Per Remotedesktop verbunden?** Eine RDP-Sitzung hat keinen Zugriff auf die physischen Monitore. DDC/CI (Tastenkombinationen, Statuszeile der Einstellungen und Umschalten beim Herunterfahren) funktioniert daher nur, wenn Sie direkt am PC angemeldet sind.
+
+## macOS
+
+DdcSwitch läuft auch auf dem Mac, als Menüleisten-App mit denselben Funktionen: bis zu drei Tastaturkurzbefehle, Umschalten vor dem Ausschalten (und auf Wunsch vor dem Ruhezustand) und dieselben 10 Sprachen. Sie ist in Swift und SwiftUI geschrieben und liegt in [`macos/`](../../macos); die Windows-Version bleibt davon unberührt.
+
+<p align="center">
+  <img src="../images/settings-macos-de.png" width="560" alt="Einstellungsfenster von DdcSwitch unter macOS">
+</p>
+
+**Voraussetzungen**: macOS 13 Ventura oder neuer. Erforderlich ist ein Mac mit Apple Chip: DdcSwitch spricht DDC/CI über dessen Display-Controller (getestet mit einem M4 Pro über USB‑C und DisplayPort). Intel-Macs werden nicht unterstützt. Der eingebaute HDMI-Anschluss von M1-Macs leitet kein DDC/CI weiter – nutzen Sie dort USB‑C oder DisplayPort.
+
+**Installation**: Laden Sie `DdcSwitch-<Version>-macos.zip` aus dem [neuesten Release](https://github.com/pokoblin/DdcSwitch/releases/latest) herunter, entpacken Sie es, verschieben Sie `DdcSwitch.app` in den Ordner *Programme* und öffnen Sie die App. Sie ist nicht notarisiert, deshalb blockiert macOS den ersten Start: Öffnen Sie *Systemeinstellungen › Datenschutz & Sicherheit* und klicken Sie auf *Dennoch öffnen*. Beim ersten Start öffnet sich das Einstellungsfenster; schalten Sie dort *Bei der Anmeldung öffnen* ein, denn das Umschalten beim Ausschalten funktioniert nur, solange DdcSwitch läuft.
+
+Zum Selbstbauen brauchen Sie Xcode oder die Command Line Tools (Swift 5.9 oder neuer):
+
+```bash
+git clone https://github.com/pokoblin/DdcSwitch.git
+cd DdcSwitch/macos
+./install.sh
+```
+
+`install.sh` baut die App, kopiert sie nach `/Applications` und startet sie. `./build.sh` baut nur `dist/DdcSwitch.app` und das Release-Zip; `swift test` führt die Tests aus.
+
+**Was auf dem Mac anders ist**
+
+- **Kurzbefehle** verwenden ⌃ ⌥ ⇧ ⌘. Klicken Sie in das Kurzbefehlsfeld und drücken Sie die Tasten; Esc bricht ab, Rückschritt löscht. Sie werden wie die globalen Kurzbefehle jeder App registriert, eine Berechtigung für Bedienungshilfen ist nicht nötig.
+- **Einstellungen gelten sofort**, wie unter macOS üblich – es gibt keinen OK-Knopf. Probleme werden direkt bei der jeweiligen Einstellung angezeigt.
+- **Umschalten beim Ausschalten**: Beim Ausschalten, Neustarten oder Abmelden fordert macOS jede App mit Angabe des Grundes zum Beenden auf. DdcSwitch schaltet beim Ausschalten um, überspringt Neustarts (außer *Nicht beim Neustart* ist ausgeschaltet) und schaltet beim Abmelden nie um. `sudo shutdown` im Terminal fordert Apps nicht zum Beenden auf und schaltet deshalb nicht um. Bricht eine andere App das Ausschalten ab, nachdem DdcSwitch beendet wurde, ist der Eingang bereits umgeschaltet.
+- **Umschalten vor dem Ruhezustand**: macOS wartet, bis der Eingang umgeschaltet ist, bevor es in den Ruhezustand wechselt.
+- **Dateien**: Einstellungen in `~/Library/Application Support/DdcSwitch/config.ini` (dieselben Schlüssel wie unter Windows sowie `appearance` = `auto`/`light`/`dark`; Kurzbefehle werden wie `Ctrl+Opt+Cmd+Left` geschrieben, `Alt`/`Win` werden als Wahl/Befehl gelesen), Protokoll in `~/Library/Logs/DdcSwitch/DdcSwitch.log`.
+- **Kommandozeile**: dieselben Optionen außer `--detect`, zum Beispiel `/Applications/DdcSwitch.app/Contents/MacOS/DdcSwitch --list`.
+- **Übersetzungen** der Mac-App stehen in [`macos/Sources/DdcSwitch/I18n.swift`](../../macos/Sources/DdcSwitch/I18n.swift); `swift test` prüft die Platzhalter.
+
+<details>
+<summary>Deinstallation unter macOS</summary>
+
+Schalten Sie zuerst *Bei der Anmeldung öffnen* in den Einstellungen aus, dann:
+
+```bash
+/Applications/DdcSwitch.app/Contents/MacOS/DdcSwitch --quit
+rm -rf /Applications/DdcSwitch.app ~/Library/Application\ Support/DdcSwitch ~/Library/Logs/DdcSwitch
+```
+</details>
 
 ## Mitwirken
 

@@ -5,13 +5,15 @@
 <h1 align="center">DdcSwitch</h1>
 
 <p align="center">
-  Switch your monitor's input source from Windows – with a hotkey,<br>
-  or automatically right before Windows shuts down.
+  Switch your monitor's input source from Windows or macOS – with a hotkey,<br>
+  or automatically right before the computer shuts down.
 </p>
 
 <p align="center">
   <img alt="Windows 10 | 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?logo=windows&logoColor=white">
+  <img alt="macOS 13+" src="https://img.shields.io/badge/macOS-13%2B-000000?logo=apple&logoColor=white">
   <img alt="Written in Rust" src="https://img.shields.io/badge/Rust-stable-B7410E?logo=rust&logoColor=white">
+  <img alt="Swift and SwiftUI" src="https://img.shields.io/badge/Swift-SwiftUI-F05138?logo=swift&logoColor=white">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-2EA44F"></a>
   <img alt="10 languages" src="https://img.shields.io/badge/languages-10-8A63D2">
 </p>
@@ -36,7 +38,8 @@ One monitor, two computers – say a Windows PC on HDMI and a MacBook on USB‑C
 **DdcSwitch** talks to the monitor over [DDC/CI](https://en.wikipedia.org/wiki/Display_Data_Channel), the same channel the on-screen menu uses. Press a hotkey to switch, and when you shut Windows down it hands the screen over to the other computer for you.
 
 <p align="center">
-  <img src="docs/images/settings-en.png" width="700" alt="DdcSwitch settings window">
+  <img src="docs/images/settings-en.png" width="410" alt="DdcSwitch settings window (Windows)">
+  <img src="docs/images/settings-macos.png" width="392" alt="DdcSwitch settings window (macOS)">
 </p>
 
 ## Features
@@ -137,6 +140,49 @@ Options: --monitor N, --config <path>
 - **The wrong monitor is switched.** Pick the monitor in *Settings* and press *OK*; its name is saved so the right one is found even if the numbering changes.
 - **Did the shutdown switch run?** Open the log from the tray menu after the next start. It records the shutdown type that was detected and the result of the switch.
 - **Connected over Remote Desktop?** An RDP session has no access to the physical monitors, so DDC/CI (hotkeys, the status line in *Settings* and the shutdown switch) only works while you are signed in at the PC itself.
+
+## macOS
+
+DdcSwitch also runs on the Mac, as a menu bar app with the same features: up to three keyboard shortcuts, switching before shutdown and optionally before sleep, and the same 10 languages. It is written in Swift and SwiftUI and lives in [`macos/`](macos); the Windows version is not affected by it.
+
+<p align="center">
+  <img src="docs/images/settings-macos-en.png" width="560" alt="DdcSwitch settings window on macOS">
+</p>
+
+**Requirements**: macOS 13 Ventura or later. A Mac with Apple silicon is required: DdcSwitch talks DDC/CI through its display controller (tested on an M4 Pro over USB‑C and DisplayPort). Intel Macs are not supported. The built-in HDMI port of M1 Macs doesn't pass DDC/CI – use USB‑C or DisplayPort there.
+
+**Installation**: download `DdcSwitch-<version>-macos.zip` from the [latest release](https://github.com/pokoblin/DdcSwitch/releases/latest), unzip it, move `DdcSwitch.app` to *Applications* and open it. The app isn't notarized, so macOS blocks the first start: open *System Settings › Privacy & Security* and click *Open Anyway*. On the first start the settings window opens; turn on *Launch at login* there, because the shutdown switch only works while DdcSwitch runs.
+
+To build it yourself you need Xcode or the Command Line Tools (Swift 5.9 or later):
+
+```bash
+git clone https://github.com/pokoblin/DdcSwitch.git
+cd DdcSwitch/macos
+./install.sh
+```
+
+`install.sh` builds the app, copies it to `/Applications` and starts it. `./build.sh` only builds `dist/DdcSwitch.app` and the release zip; `swift test` runs the tests.
+
+**What's different on the Mac**
+
+- **Shortcuts** use ⌃ ⌥ ⇧ ⌘. Click the shortcut field and press the keys; Esc cancels, Delete clears. They are registered like any app's global shortcuts, so no Accessibility permission is needed.
+- **Settings apply immediately**, as usual on macOS – there is no OK button. Problems are shown next to the setting.
+- **Shutdown switch**: when you shut down, restart or log out, macOS asks every app to quit and tells it why. DdcSwitch switches on shutdown, skips restarts (unless *Not when restarting* is off) and never switches when you log out. `sudo shutdown` in Terminal doesn't ask apps to quit, so it doesn't switch. If another app cancels the shutdown after DdcSwitch has quit, the input has already been switched.
+- **Sleep switch**: macOS waits until the input is switched before it goes to sleep.
+- **Files**: settings in `~/Library/Application Support/DdcSwitch/config.ini` (the same keys as on Windows plus `appearance` = `auto`/`light`/`dark`; hotkeys are written like `Ctrl+Opt+Cmd+Left`, and `Alt`/`Win` are read as Option/Command), log in `~/Library/Logs/DdcSwitch/DdcSwitch.log`.
+- **Command line**: the same options except `--detect`, for example `/Applications/DdcSwitch.app/Contents/MacOS/DdcSwitch --list`.
+- **Translations** of the Mac app are in [`macos/Sources/DdcSwitch/I18n.swift`](macos/Sources/DdcSwitch/I18n.swift); `swift test` checks the placeholders.
+
+<details>
+<summary>Uninstall on macOS</summary>
+
+Turn off *Launch at login* in the settings first, then:
+
+```bash
+/Applications/DdcSwitch.app/Contents/MacOS/DdcSwitch --quit
+rm -rf /Applications/DdcSwitch.app ~/Library/Application\ Support/DdcSwitch ~/Library/Logs/DdcSwitch
+```
+</details>
 
 ## Contributing
 

@@ -5,13 +5,15 @@
 <h1 align="center">DdcSwitch</h1>
 
 <p align="center">
-  在 Windows 上切換螢幕輸入來源——按快速鍵，<br>
-  或在 Windows 關機前自動切換。
+  在 Windows 或 macOS 上切換螢幕輸入來源——按快速鍵，<br>
+  或在關機前自動切換。
 </p>
 
 <p align="center">
   <img alt="Windows 10 | 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?logo=windows&logoColor=white">
+  <img alt="macOS 13+" src="https://img.shields.io/badge/macOS-13%2B-000000?logo=apple&logoColor=white">
   <img alt="Written in Rust" src="https://img.shields.io/badge/Rust-stable-B7410E?logo=rust&logoColor=white">
+  <img alt="Swift and SwiftUI" src="https://img.shields.io/badge/Swift-SwiftUI-F05138?logo=swift&logoColor=white">
   <a href="../../LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-2EA44F"></a>
   <img alt="10 languages" src="https://img.shields.io/badge/languages-10-8A63D2">
 </p>
@@ -36,7 +38,8 @@
 **DdcSwitch** 透過 [DDC/CI](https://en.wikipedia.org/wiki/Display_Data_Channel)（也就是螢幕 OSD 選單使用的通道）與螢幕溝通。按一下快速鍵就能切換；Windows 關機時，它會自動把畫面交給另一台電腦。
 
 <p align="center">
-  <img src="../images/settings-zh-Hant.png" width="700" alt="DdcSwitch 設定視窗">
+  <img src="../images/settings-zh-Hant.png" width="410" alt="DdcSwitch 設定視窗 (Windows)">
+  <img src="../images/settings-macos.png" width="392" alt="DdcSwitch 設定視窗 (macOS)">
 </p>
 
 ## 功能
@@ -137,6 +140,49 @@ DdcSwitch.exe --quit            要求執行中的系統匣程式結束
 - **切換到錯誤的螢幕。** 在*設定*中選擇螢幕並按*確定*；程式會儲存螢幕名稱，即使編號改變也能找到正確的那台。
 - **關機切換到底有沒有執行？** 下次開機後從系統匣選單開啟記錄，裡面記載了偵測到的關機類型和切換結果。
 - **透過遠端桌面連線？** RDP 工作階段無法存取實體螢幕，因此 DDC/CI（快速鍵、設定視窗中的狀態列以及關機切換）只有在電腦本機登入時才能運作。
+
+## macOS
+
+DdcSwitch 也能在 Mac 上執行：一個選單列 App，功能相同——最多三組快速鍵、關機前切換（也可選擇睡眠前切換），以及同樣的 10 種語言。它以 Swift 和 SwiftUI 撰寫，程式碼位於 [`macos/`](../../macos)，不影響 Windows 版本。
+
+<p align="center">
+  <img src="../images/settings-macos-zh-Hant.png" width="560" alt="macOS 上的 DdcSwitch 設定視窗">
+</p>
+
+**系統需求**：macOS 13 Ventura 或以上版本。需要搭載 Apple 晶片的 Mac：DdcSwitch 透過它的顯示控制器收發 DDC/CI（已在 M4 Pro 上透過 USB‑C 和 DisplayPort 測試）。不支援 Intel Mac。M1 Mac 內建的 HDMI 埠不傳遞 DDC/CI，請改用 USB‑C 或 DisplayPort。
+
+**安裝**：從[最新發佈版本](https://github.com/pokoblin/DdcSwitch/releases/latest)下載 `DdcSwitch-<版本>-macos.zip`，解壓縮後將 `DdcSwitch.app` 移到「應用程式」檔案夾並打開。App 未經公證，macOS 會阻擋第一次打開：請打開「系統設定 › 隱私權與安全性」，按一下「強制打開」。第一次啟動時會打開設定視窗，請在那裡開啟「登入時啟動」，因為關機切換只有在 DdcSwitch 執行時才有效。
+
+自行建置需要 Xcode 或命令列工具（Swift 5.9 或以上版本）：
+
+```bash
+git clone https://github.com/pokoblin/DdcSwitch.git
+cd DdcSwitch/macos
+./install.sh
+```
+
+`install.sh` 會建置 App，複製到 `/Applications` 並啟動。`./build.sh` 只建置 `dist/DdcSwitch.app` 和發佈用的 zip；`swift test` 執行測試。
+
+**Mac 版的不同之處**
+
+- **快速鍵**使用 ⌃ ⌥ ⇧ ⌘。按一下快速鍵欄位，再按下按鍵；Esc 取消，Delete 清除。快速鍵以一般 App 的全域快速鍵註冊，不需要「輔助使用」權限。
+- **設定立即生效**，這是 macOS 的慣例——沒有「確定」按鈕。有問題時會直接顯示在對應設定旁邊。
+- **關機切換**：關機、重新啟動或登出時，macOS 會要求每個 App 結束並告知原因。DdcSwitch 在關機時切換，重新啟動時略過（除非關閉了「重新啟動時不切換」），登出時一律不切換。在終端機執行 `sudo shutdown` 不會要求 App 結束，因此不會切換。如果 DdcSwitch 結束之後又有其他 App 取消了關機，輸入來源已經切換過了。
+- **睡眠切換**：macOS 會等輸入來源切換完成後再進入睡眠。
+- **檔案**：設定在 `~/Library/Application Support/DdcSwitch/config.ini`（鍵與 Windows 版相同，另有 `appearance` = `auto`/`light`/`dark`；快速鍵寫作 `Ctrl+Opt+Cmd+Left`，`Alt`/`Win` 會被讀作 Option/Command），記錄在 `~/Library/Logs/DdcSwitch/DdcSwitch.log`。
+- **命令列**：除 `--detect` 外選項相同，例如 `/Applications/DdcSwitch.app/Contents/MacOS/DdcSwitch --list`。
+- **翻譯**：Mac 版的介面文字在 [`macos/Sources/DdcSwitch/I18n.swift`](../../macos/Sources/DdcSwitch/I18n.swift)，`swift test` 會檢查預留位置。
+
+<details>
+<summary>在 macOS 上解除安裝</summary>
+
+先在設定中關閉「登入時啟動」，然後執行：
+
+```bash
+/Applications/DdcSwitch.app/Contents/MacOS/DdcSwitch --quit
+rm -rf /Applications/DdcSwitch.app ~/Library/Application\ Support/DdcSwitch ~/Library/Logs/DdcSwitch
+```
+</details>
 
 ## 參與貢獻
 

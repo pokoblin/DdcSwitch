@@ -5,13 +5,15 @@
 <h1 align="center">DdcSwitch</h1>
 
 <p align="center">
-  Переключайте вход монитора прямо из Windows — горячей клавишей<br>
-  или автоматически, непосредственно перед выключением Windows.
+  Переключайте вход монитора прямо из Windows или macOS — горячей клавишей<br>
+  или автоматически, непосредственно перед выключением компьютера.
 </p>
 
 <p align="center">
   <img alt="Windows 10 | 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?logo=windows&logoColor=white">
+  <img alt="macOS 13+" src="https://img.shields.io/badge/macOS-13%2B-000000?logo=apple&logoColor=white">
   <img alt="Написано на Rust" src="https://img.shields.io/badge/Rust-stable-B7410E?logo=rust&logoColor=white">
+  <img alt="Swift and SwiftUI" src="https://img.shields.io/badge/Swift-SwiftUI-F05138?logo=swift&logoColor=white">
   <a href="../../LICENSE"><img alt="Лицензия: MIT" src="https://img.shields.io/badge/license-MIT-2EA44F"></a>
   <img alt="10 языков" src="https://img.shields.io/badge/languages-10-8A63D2">
 </p>
@@ -36,7 +38,8 @@
 **DdcSwitch** общается с монитором по [DDC/CI](https://en.wikipedia.org/wiki/Display_Data_Channel) — тому же каналу, которым пользуется экранное меню. Нажмите горячую клавишу, чтобы переключиться, а при выключении Windows программа сама передаст экран другому компьютеру.
 
 <p align="center">
-  <img src="../images/settings-ru.png" width="700" alt="Окно настроек DdcSwitch">
+  <img src="../images/settings-ru.png" width="410" alt="Окно настроек DdcSwitch (Windows)">
+  <img src="../images/settings-macos.png" width="392" alt="Окно настроек DdcSwitch (macOS)">
 </p>
 
 ## Возможности
@@ -137,6 +140,49 @@ DdcSwitch.exe --quit            Попросить запущенное прил
 - **Переключается не тот монитор.** Выберите монитор в окне *Настройки* и нажмите *OK*: его имя сохранится, и нужный монитор найдётся, даже если нумерация изменится.
 - **Сработало ли переключение при выключении?** После следующего запуска откройте журнал из меню в трее. В нём записаны распознанный тип выключения и результат переключения.
 - **Подключены через удалённый рабочий стол?** Сеанс RDP не имеет доступа к физическим мониторам, поэтому DDC/CI (горячие клавиши, строка состояния в настройках и переключение при выключении) работает, только когда вы вошли в систему за самим компьютером.
+
+## macOS
+
+DdcSwitch работает и на Mac — как приложение в строке меню с теми же возможностями: до трёх сочетаний клавиш, переключение перед выключением (и при желании перед сном) и те же 10 языков. Оно написано на Swift и SwiftUI и находится в [`macos/`](../../macos); на версию для Windows это не влияет.
+
+<p align="center">
+  <img src="../images/settings-macos-ru.png" width="560" alt="Окно настроек DdcSwitch в macOS">
+</p>
+
+**Требования**: macOS 13 Ventura или новее. Нужен Mac с чипом Apple: DdcSwitch обменивается данными DDC/CI через его контроллер дисплея (проверено на M4 Pro через USB‑C и DisplayPort). Mac с Intel не поддерживаются. Встроенный порт HDMI у Mac с M1 не передаёт DDC/CI — используйте USB‑C или DisplayPort.
+
+**Установка**: скачайте `DdcSwitch-<версия>-macos.zip` из [последнего релиза](https://github.com/pokoblin/DdcSwitch/releases/latest), распакуйте, перенесите `DdcSwitch.app` в папку «Программы» и откройте. Приложение не нотаризовано, поэтому macOS блокирует первый запуск: откройте «Системные настройки › Конфиденциальность и безопасность» и нажмите «Все равно открыть». При первом запуске откроется окно настроек; включите там «Открывать при входе», потому что переключение при выключении работает, только пока DdcSwitch запущен.
+
+Для самостоятельной сборки нужен Xcode или Command Line Tools (Swift 5.9 или новее):
+
+```bash
+git clone https://github.com/pokoblin/DdcSwitch.git
+cd DdcSwitch/macos
+./install.sh
+```
+
+`install.sh` собирает приложение, копирует его в `/Applications` и запускает. `./build.sh` только собирает `dist/DdcSwitch.app` и zip для релиза; `swift test` запускает тесты.
+
+**Чем отличается версия для Mac**
+
+- **Сочетания клавиш** используют ⌃ ⌥ ⇧ ⌘. Нажмите на поле сочетания и нажмите клавиши; Esc отменяет запись, Delete очищает. Они регистрируются как глобальные сочетания обычного приложения, поэтому разрешение «Универсальный доступ» не нужно.
+- **Настройки применяются сразу**, как принято в macOS, — кнопки «ОК» нет. Проблемы показываются рядом с соответствующей настройкой.
+- **Переключение при выключении**: при выключении, перезагрузке или выходе из системы macOS просит каждое приложение завершиться и сообщает причину. DdcSwitch переключает вход при выключении, пропускает перезагрузку (если не выключено «Не при перезагрузке») и никогда не переключает при выходе из системы. `sudo shutdown` в Терминале не просит приложения завершиться, поэтому переключения не будет. Если другое приложение отменит выключение после того, как DdcSwitch завершился, вход уже будет переключён.
+- **Переключение перед сном**: macOS ждёт, пока вход переключится, и только потом уходит в сон.
+- **Файлы**: настройки в `~/Library/Application Support/DdcSwitch/config.ini` (те же ключи, что и в Windows, плюс `appearance` = `auto`/`light`/`dark`; сочетания записываются как `Ctrl+Opt+Cmd+Left`, а `Alt`/`Win` читаются как Option/Command), журнал в `~/Library/Logs/DdcSwitch/DdcSwitch.log`.
+- **Командная строка**: те же параметры, кроме `--detect`, например `/Applications/DdcSwitch.app/Contents/MacOS/DdcSwitch --list`.
+- **Переводы** приложения для Mac находятся в [`macos/Sources/DdcSwitch/I18n.swift`](../../macos/Sources/DdcSwitch/I18n.swift); `swift test` проверяет подстановки.
+
+<details>
+<summary>Удаление в macOS</summary>
+
+Сначала выключите «Открывать при входе» в настройках, затем выполните:
+
+```bash
+/Applications/DdcSwitch.app/Contents/MacOS/DdcSwitch --quit
+rm -rf /Applications/DdcSwitch.app ~/Library/Application\ Support/DdcSwitch ~/Library/Logs/DdcSwitch
+```
+</details>
 
 ## Участие в разработке
 

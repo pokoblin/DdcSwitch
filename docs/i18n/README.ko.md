@@ -5,13 +5,15 @@
 <h1 align="center">DdcSwitch</h1>
 
 <p align="center">
-  단축키 하나로, 또는 Windows가 종료되기 직전에 자동으로<br>
+  단축키 하나로, 또는 Windows나 macOS가 종료되기 직전에 자동으로<br>
   모니터 입력 소스를 전환합니다.
 </p>
 
 <p align="center">
   <img alt="Windows 10 | 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?logo=windows&logoColor=white">
+  <img alt="macOS 13+" src="https://img.shields.io/badge/macOS-13%2B-000000?logo=apple&logoColor=white">
   <img alt="Rust로 작성" src="https://img.shields.io/badge/Rust-stable-B7410E?logo=rust&logoColor=white">
+  <img alt="Swift and SwiftUI" src="https://img.shields.io/badge/Swift-SwiftUI-F05138?logo=swift&logoColor=white">
   <a href="../../LICENSE"><img alt="라이선스: MIT" src="https://img.shields.io/badge/license-MIT-2EA44F"></a>
   <img alt="10개 언어" src="https://img.shields.io/badge/languages-10-8A63D2">
 </p>
@@ -36,7 +38,8 @@
 **DdcSwitch**는 OSD 메뉴가 쓰는 것과 같은 채널인 [DDC/CI](https://en.wikipedia.org/wiki/Display_Data_Channel)로 모니터와 통신합니다. 단축키를 누르면 입력이 전환되고, Windows를 종료하면 화면을 알아서 다른 컴퓨터로 넘겨줍니다.
 
 <p align="center">
-  <img src="../images/settings-ko.png" width="700" alt="DdcSwitch 설정 창">
+  <img src="../images/settings-ko.png" width="410" alt="DdcSwitch 설정 창 (Windows)">
+  <img src="../images/settings-macos.png" width="392" alt="DdcSwitch 설정 창 (macOS)">
 </p>
 
 ## 기능
@@ -137,6 +140,49 @@ DdcSwitch.exe --quit            실행 중인 트레이 앱에 종료 요청
 - **엉뚱한 모니터가 전환됩니다.** *설정*에서 모니터를 선택하고 *확인*을 누르세요. 모니터 이름이 저장되므로 번호가 바뀌어도 올바른 모니터를 찾습니다.
 - **종료 시 전환이 실행됐는지 궁금합니다.** 다음에 시작한 뒤 트레이 메뉴에서 로그를 열어 보세요. 감지된 종료 유형과 전환 결과가 기록되어 있습니다.
 - **원격 데스크톱으로 연결했나요?** RDP 세션은 실제 모니터에 접근할 수 없으므로 DDC/CI(단축키, 설정 창의 상태 표시, 종료 시 전환)는 PC 앞에서 직접 로그인했을 때만 동작합니다.
+
+## macOS
+
+DdcSwitch는 Mac에서도 실행됩니다. 같은 기능을 갖춘 메뉴 막대 앱으로, 최대 3개의 키보드 단축키, 시스템 종료 전 전환(잠자기 전 전환도 선택 가능), 그리고 같은 10개 언어를 지원합니다. Swift와 SwiftUI로 작성되었고 [`macos/`](../../macos)에 있으며, Windows 버전에는 영향을 주지 않습니다.
+
+<p align="center">
+  <img src="../images/settings-macos-ko.png" width="560" alt="macOS의 DdcSwitch 설정 창">
+</p>
+
+**요구 사항**: macOS 13 Ventura 이상. Apple 실리콘 Mac이 필요합니다. DdcSwitch는 디스플레이 컨트롤러를 통해 DDC/CI를 주고받습니다(M4 Pro에서 USB‑C와 DisplayPort로 테스트함). Intel Mac은 지원하지 않습니다. M1 Mac의 내장 HDMI 포트는 DDC/CI를 전달하지 않으므로 USB‑C나 DisplayPort를 사용하세요.
+
+**설치**: [최신 릴리스](https://github.com/pokoblin/DdcSwitch/releases/latest)에서 `DdcSwitch-<버전>-macos.zip`을 내려받아 압축을 풀고, `DdcSwitch.app`을 '응용 프로그램' 폴더로 옮긴 뒤 여세요. 공증을 받지 않은 앱이라 macOS가 처음 실행을 막습니다. '시스템 설정 › 개인정보 보호 및 보안'을 열고 '그래도 열기'를 클릭하세요. 처음 실행하면 설정 창이 열리니 '로그인 시 실행'을 켜세요. 종료 시 전환은 DdcSwitch가 실행 중일 때만 동작하기 때문입니다.
+
+직접 빌드하려면 Xcode 또는 명령어 라인 도구(Swift 5.9 이상)가 필요합니다.
+
+```bash
+git clone https://github.com/pokoblin/DdcSwitch.git
+cd DdcSwitch/macos
+./install.sh
+```
+
+`install.sh`는 앱을 빌드해 `/Applications`에 복사하고 실행합니다. `./build.sh`는 `dist/DdcSwitch.app`과 릴리스용 zip만 빌드하며, `swift test`로 테스트를 실행합니다.
+
+**Mac 버전에서 다른 점**
+
+- **단축키**는 ⌃ ⌥ ⇧ ⌘를 사용합니다. 단축키 칸을 클릭하고 키를 누르세요. Esc는 취소, Delete는 지우기입니다. 일반 앱의 전역 단축키로 등록되므로 손쉬운 사용 권한이 필요 없습니다.
+- **설정은 바로 적용됩니다.** macOS의 관례대로 '확인' 버튼이 없습니다. 문제가 있으면 해당 설정 옆에 표시됩니다.
+- **종료 시 전환**: 시스템 종료, 재시동, 로그아웃 시 macOS는 각 앱에 이유와 함께 종료를 요청합니다. DdcSwitch는 시스템 종료 시 전환하고, 재시동은 ('재시동 시에는 전환 안 함'을 끄지 않는 한) 건너뛰며, 로그아웃 시에는 전환하지 않습니다. 터미널의 `sudo shutdown`은 앱에 종료를 요청하지 않으므로 전환되지 않습니다. DdcSwitch가 종료된 뒤 다른 앱이 시스템 종료를 취소하면 입력은 이미 전환된 상태입니다.
+- **잠자기 시 전환**: macOS는 입력 전환이 끝날 때까지 기다린 뒤 잠자기에 들어갑니다.
+- **파일**: 설정은 `~/Library/Application Support/DdcSwitch/config.ini`(키는 Windows와 같고 `appearance` = `auto`/`light`/`dark`가 추가됩니다. 단축키는 `Ctrl+Opt+Cmd+Left`처럼 기록되며 `Alt`/`Win`은 Option/Command로 읽습니다), 로그는 `~/Library/Logs/DdcSwitch/DdcSwitch.log`에 있습니다.
+- **명령줄**: `--detect`를 제외하면 옵션이 같습니다. 예: `/Applications/DdcSwitch.app/Contents/MacOS/DdcSwitch --list`
+- **번역**: Mac 앱의 UI 문자열은 [`macos/Sources/DdcSwitch/I18n.swift`](../../macos/Sources/DdcSwitch/I18n.swift)에 있으며, `swift test`가 자리 표시자를 검사합니다.
+
+<details>
+<summary>macOS에서 제거</summary>
+
+먼저 설정에서 '로그인 시 실행'을 끈 다음 실행하세요.
+
+```bash
+/Applications/DdcSwitch.app/Contents/MacOS/DdcSwitch --quit
+rm -rf /Applications/DdcSwitch.app ~/Library/Application\ Support/DdcSwitch ~/Library/Logs/DdcSwitch
+```
+</details>
 
 ## 기여하기
 

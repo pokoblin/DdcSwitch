@@ -5,13 +5,15 @@
 <h1 align="center">DdcSwitch</h1>
 
 <p align="center">
-  Changez l'entrée de votre écran depuis Windows  avec un raccourci clavier,<br>
-  ou automatiquement juste avant l'arrêt de Windows.
+  Changez l'entrée de votre écran depuis Windows ou macOS – avec un raccourci clavier,<br>
+  ou automatiquement juste avant l'arrêt de l'ordinateur.
 </p>
 
 <p align="center">
   <img alt="Windows 10 | 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?logo=windows&logoColor=white">
+  <img alt="macOS 13+" src="https://img.shields.io/badge/macOS-13%2B-000000?logo=apple&logoColor=white">
   <img alt="Écrit en Rust" src="https://img.shields.io/badge/Rust-stable-B7410E?logo=rust&logoColor=white">
+  <img alt="Swift and SwiftUI" src="https://img.shields.io/badge/Swift-SwiftUI-F05138?logo=swift&logoColor=white">
   <a href="../../LICENSE"><img alt="Licence  MIT" src="https://img.shields.io/badge/license-MIT-2EA44F"></a>
   <img alt="10 langues" src="https://img.shields.io/badge/languages-10-8A63D2">
 </p>
@@ -36,7 +38,8 @@ Un écran, deux ordinateurs  par exemple un PC Windows en HDMI et un MacBook e
 **DdcSwitch** dialogue avec l'écran via [DDC/CI](https://en.wikipedia.org/wiki/Display_Data_Channel), le canal qu'utilise aussi le menu à l'écran (OSD). Appuyez sur un raccourci pour basculer  et quand vous éteignez Windows, il passe la main à l'autre ordinateur à votre place.
 
 <p align="center">
-  <img src="../images/settings-fr.png" width="700" alt="Fenêtre des paramètres de DdcSwitch">
+  <img src="../images/settings-fr.png" width="410" alt="Fenêtre des paramètres de DdcSwitch (Windows)">
+  <img src="../images/settings-macos.png" width="392" alt="Fenêtre des paramètres de DdcSwitch (macOS)">
 </p>
 
 ## Fonctionnalités
@@ -137,6 +140,49 @@ Options : --monitor N, --config <path>
 - **Ce n'est pas le bon écran qui bascule.** Choisissez l'écran dans *Paramètres* et cliquez sur *OK*  son nom est enregistré, si bien que le bon écran est retrouvé même si la numérotation change.
 - **La bascule à l'arrêt a-t-elle eu lieu ** Ouvrez le journal depuis le menu de la zone de notification au démarrage suivant. Il indique le type d'arrêt détecté et le résultat de la bascule.
 - **Connecté via le Bureau à distance ?** Une session RDP n'a pas accès aux écrans physiques : DDC/CI (raccourcis, ligne d'état des paramètres et bascule à l'arrêt) ne fonctionne que si vous êtes connecté directement sur le PC.
+
+## macOS
+
+DdcSwitch fonctionne aussi sur Mac, sous forme d'app de barre des menus aux fonctions identiques : jusqu'à trois raccourcis clavier, le basculement avant l'extinction (et, au choix, avant la mise en veille) et les mêmes 10 langues. Elle est écrite en Swift et SwiftUI et se trouve dans [`macos/`](../../macos) ; la version Windows n'en est pas affectée.
+
+<p align="center">
+  <img src="../images/settings-macos-fr.png" width="560" alt="Fenêtre de réglages de DdcSwitch sur macOS">
+</p>
+
+**Configuration requise** : macOS 13 Ventura ou ultérieur. Un Mac à puce Apple est nécessaire : DdcSwitch communique en DDC/CI via son contrôleur d'affichage (testé sur un M4 Pro en USB‑C et DisplayPort). Les Mac Intel ne sont pas pris en charge. Le port HDMI intégré des Mac M1 ne transmet pas le DDC/CI : utilisez l'USB‑C ou le DisplayPort.
+
+**Installation** : téléchargez `DdcSwitch-<version>-macos.zip` depuis la [dernière version](https://github.com/pokoblin/DdcSwitch/releases/latest), décompressez-le, déplacez `DdcSwitch.app` dans *Applications* et ouvrez-la. L'app n'est pas notariée, macOS bloque donc la première ouverture : ouvrez *Réglages Système › Confidentialité et sécurité* et cliquez sur *Ouvrir quand même*. Au premier lancement, la fenêtre de réglages s'ouvre ; activez-y *Ouvrir à la connexion*, car le basculement à l'extinction ne fonctionne que si DdcSwitch est ouvert.
+
+Pour la compiler vous-même, il faut Xcode ou les Command Line Tools (Swift 5.9 ou ultérieur) :
+
+```bash
+git clone https://github.com/pokoblin/DdcSwitch.git
+cd DdcSwitch/macos
+./install.sh
+```
+
+`install.sh` compile l'app, la copie dans `/Applications` et la lance. `./build.sh` ne fait que générer `dist/DdcSwitch.app` et le zip de version ; `swift test` lance les tests.
+
+**Ce qui change sur Mac**
+
+- **Les raccourcis** utilisent ⌃ ⌥ ⇧ ⌘. Cliquez sur le champ du raccourci et appuyez sur les touches ; Échap annule, Supprimer efface. Ils sont enregistrés comme les raccourcis globaux de n'importe quelle app : aucune autorisation d'Accessibilité n'est nécessaire.
+- **Les réglages s'appliquent immédiatement**, comme d'habitude sur macOS : il n'y a pas de bouton OK. Les problèmes s'affichent à côté du réglage concerné.
+- **Basculement à l'extinction** : lors d'une extinction, d'un redémarrage ou d'une déconnexion, macOS demande à chaque app de quitter en indiquant la raison. DdcSwitch bascule à l'extinction, ignore les redémarrages (sauf si *Pas lors d'un redémarrage* est désactivé) et ne bascule jamais lors d'une déconnexion. `sudo shutdown` dans le Terminal ne demande pas aux apps de quitter, donc rien ne bascule. Si une autre app annule l'extinction après que DdcSwitch a quitté, l'entrée a déjà été changée.
+- **Basculement avant la veille** : macOS attend que l'entrée soit changée avant de se mettre en veille.
+- **Fichiers** : réglages dans `~/Library/Application Support/DdcSwitch/config.ini` (mêmes clés que sous Windows, plus `appearance` = `auto`/`light`/`dark` ; les raccourcis s'écrivent `Ctrl+Opt+Cmd+Left`, et `Alt`/`Win` sont lus comme Option/Commande), journal dans `~/Library/Logs/DdcSwitch/DdcSwitch.log`.
+- **Ligne de commande** : les mêmes options sauf `--detect`, par exemple `/Applications/DdcSwitch.app/Contents/MacOS/DdcSwitch --list`.
+- **Traductions** de l'app Mac : dans [`macos/Sources/DdcSwitch/I18n.swift`](../../macos/Sources/DdcSwitch/I18n.swift) ; `swift test` vérifie les espaces réservés.
+
+<details>
+<summary>Désinstaller sur macOS</summary>
+
+Désactivez d'abord *Ouvrir à la connexion* dans les réglages, puis :
+
+```bash
+/Applications/DdcSwitch.app/Contents/MacOS/DdcSwitch --quit
+rm -rf /Applications/DdcSwitch.app ~/Library/Application\ Support/DdcSwitch ~/Library/Logs/DdcSwitch
+```
+</details>
 
 ## Contribuer
 

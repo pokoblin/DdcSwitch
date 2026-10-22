@@ -5,13 +5,15 @@
 <h1 align="center">DdcSwitch</h1>
 
 <p align="center">
-  Troque a entrada do seu monitor pelo Windows – com um atalho de teclado<br>
-  ou automaticamente, logo antes de o Windows desligar.
+  Troque a entrada do seu monitor pelo Windows ou pelo macOS – com um atalho de teclado<br>
+  ou automaticamente, logo antes de o computador desligar.
 </p>
 
 <p align="center">
   <img alt="Windows 10 | 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?logo=windows&logoColor=white">
+  <img alt="macOS 13+" src="https://img.shields.io/badge/macOS-13%2B-000000?logo=apple&logoColor=white">
   <img alt="Escrito em Rust" src="https://img.shields.io/badge/Rust-stable-B7410E?logo=rust&logoColor=white">
+  <img alt="Swift and SwiftUI" src="https://img.shields.io/badge/Swift-SwiftUI-F05138?logo=swift&logoColor=white">
   <a href="../../LICENSE"><img alt="Licença: MIT" src="https://img.shields.io/badge/license-MIT-2EA44F"></a>
   <img alt="10 idiomas" src="https://img.shields.io/badge/languages-10-8A63D2">
 </p>
@@ -36,7 +38,8 @@ Um monitor, dois computadores – digamos, um PC com Windows no HDMI e um MacBoo
 O **DdcSwitch** conversa com o monitor via [DDC/CI](https://en.wikipedia.org/wiki/Display_Data_Channel), o mesmo canal que o menu na tela usa. Aperte um atalho para trocar e, quando você desligar o Windows, ele passa a tela para o outro computador por você.
 
 <p align="center">
-  <img src="../images/settings-pt-BR.png" width="700" alt="Janela de configurações do DdcSwitch">
+  <img src="../images/settings-pt-BR.png" width="410" alt="Janela de configurações do DdcSwitch (Windows)">
+  <img src="../images/settings-macos.png" width="392" alt="Janela de configurações do DdcSwitch (macOS)">
 </p>
 
 ## Recursos
@@ -137,6 +140,49 @@ Opções: --monitor N, --config <path>
 - **O monitor errado é trocado.** Escolha o monitor em *Configurações* e clique em *OK*; o nome dele é salvo, para que o monitor certo seja encontrado mesmo que a numeração mude.
 - **A troca ao desligar funcionou?** Abra o log pelo menu da bandeja depois da próxima inicialização. Ele registra o tipo de desligamento detectado e o resultado da troca.
 - **Conectado pela Área de Trabalho Remota?** Uma sessão RDP não tem acesso aos monitores físicos, então o DDC/CI (atalhos, a linha de status das configurações e a troca ao desligar) só funciona quando você entra diretamente no próprio PC.
+
+## macOS
+
+O DdcSwitch também roda no Mac, como um app da barra de menus com os mesmos recursos: até três atalhos de teclado, troca antes de desligar (e, se quiser, antes do repouso) e os mesmos 10 idiomas. Ele é escrito em Swift e SwiftUI e fica em [`macos/`](../../macos); a versão para Windows não é afetada.
+
+<p align="center">
+  <img src="../images/settings-macos-pt-BR.png" width="560" alt="Janela de ajustes do DdcSwitch no macOS">
+</p>
+
+**Requisitos**: macOS 13 Ventura ou posterior. É preciso um Mac com Apple Silicon: o DdcSwitch usa DDC/CI pelo controlador de vídeo dele (testado em um M4 Pro via USB‑C e DisplayPort). Macs com Intel não são compatíveis. A porta HDMI integrada dos Macs com M1 não repassa DDC/CI – use USB‑C ou DisplayPort.
+
+**Instalação**: baixe `DdcSwitch-<versão>-macos.zip` da [versão mais recente](https://github.com/pokoblin/DdcSwitch/releases/latest), descompacte, mova `DdcSwitch.app` para *Aplicativos* e abra o app. Ele não é notarizado, então o macOS bloqueia a primeira abertura: abra *Ajustes do Sistema › Privacidade e Segurança* e clique em *Abrir Mesmo Assim*. Na primeira abertura, a janela de ajustes aparece; ative ali *Abrir ao iniciar sessão*, porque a troca ao desligar só funciona enquanto o DdcSwitch estiver aberto.
+
+Para compilar você mesmo, é preciso o Xcode ou as Command Line Tools (Swift 5.9 ou posterior):
+
+```bash
+git clone https://github.com/pokoblin/DdcSwitch.git
+cd DdcSwitch/macos
+./install.sh
+```
+
+O `install.sh` compila o app, copia para `/Applications` e o abre. O `./build.sh` só gera `dist/DdcSwitch.app` e o zip da versão; `swift test` executa os testes.
+
+**O que muda no Mac**
+
+- **Os atalhos** usam ⌃ ⌥ ⇧ ⌘. Clique no campo do atalho e pressione as teclas; Esc cancela, Delete apaga. Eles são registrados como os atalhos globais de qualquer app, então não é preciso a permissão de Acessibilidade.
+- **Os ajustes valem na hora**, como de costume no macOS – não há botão OK. Problemas aparecem ao lado do ajuste correspondente.
+- **Troca ao desligar**: ao desligar, reiniciar ou sair da sessão, o macOS pede a cada app que encerre e informa o motivo. O DdcSwitch troca ao desligar, ignora reinícios (a menos que *Não ao reiniciar* esteja desativado) e nunca troca ao sair da sessão. `sudo shutdown` no Terminal não pede aos apps que encerrem, então não troca. Se outro app cancelar o desligamento depois que o DdcSwitch tiver encerrado, a entrada já terá sido trocada.
+- **Troca antes do repouso**: o macOS espera a entrada ser trocada antes de entrar em repouso.
+- **Arquivos**: ajustes em `~/Library/Application Support/DdcSwitch/config.ini` (as mesmas chaves do Windows, mais `appearance` = `auto`/`light`/`dark`; atalhos são gravados como `Ctrl+Opt+Cmd+Left`, e `Alt`/`Win` são lidos como Option/Command), registro em `~/Library/Logs/DdcSwitch/DdcSwitch.log`.
+- **Linha de comando**: as mesmas opções, exceto `--detect`, por exemplo `/Applications/DdcSwitch.app/Contents/MacOS/DdcSwitch --list`.
+- **Traduções** do app para Mac: em [`macos/Sources/DdcSwitch/I18n.swift`](../../macos/Sources/DdcSwitch/I18n.swift); `swift test` verifica os marcadores.
+
+<details>
+<summary>Desinstalar no macOS</summary>
+
+Desative primeiro *Abrir ao iniciar sessão* nos ajustes e depois execute:
+
+```bash
+/Applications/DdcSwitch.app/Contents/MacOS/DdcSwitch --quit
+rm -rf /Applications/DdcSwitch.app ~/Library/Application\ Support/DdcSwitch ~/Library/Logs/DdcSwitch
+```
+</details>
 
 ## Contribuindo
 

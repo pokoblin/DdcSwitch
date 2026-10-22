@@ -5,13 +5,15 @@
 <h1 align="center">DdcSwitch</h1>
 
 <p align="center">
-  Cambia la entrada de tu monitor desde Windows: con un atajo de teclado<br>
-  o automáticamente justo antes de que Windows se apague.
+  Cambia la entrada de tu monitor desde Windows o macOS: con un atajo de teclado<br>
+  o automáticamente justo antes de que el ordenador se apague.
 </p>
 
 <p align="center">
   <img alt="Windows 10 | 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?logo=windows&logoColor=white">
+  <img alt="macOS 13+" src="https://img.shields.io/badge/macOS-13%2B-000000?logo=apple&logoColor=white">
   <img alt="Escrito en Rust" src="https://img.shields.io/badge/Rust-stable-B7410E?logo=rust&logoColor=white">
+  <img alt="Swift and SwiftUI" src="https://img.shields.io/badge/Swift-SwiftUI-F05138?logo=swift&logoColor=white">
   <a href="../../LICENSE"><img alt="Licencia: MIT" src="https://img.shields.io/badge/license-MIT-2EA44F"></a>
   <img alt="10 idiomas" src="https://img.shields.io/badge/languages-10-8A63D2">
 </p>
@@ -36,7 +38,8 @@ Un monitor y dos equipos: por ejemplo, un PC con Windows por HDMI y un MacBook p
 **DdcSwitch** se comunica con el monitor mediante [DDC/CI](https://en.wikipedia.org/wiki/Display_Data_Channel), el mismo canal que usa el menú en pantalla. Pulsa un atajo para cambiar de entrada y, cuando apagues Windows, la pantalla pasará al otro equipo sin que tengas que hacer nada.
 
 <p align="center">
-  <img src="../images/settings-es.png" width="700" alt="Ventana de configuración de DdcSwitch">
+  <img src="../images/settings-es.png" width="410" alt="Ventana de configuración de DdcSwitch (Windows)">
+  <img src="../images/settings-macos.png" width="392" alt="Ventana de configuración de DdcSwitch (macOS)">
 </p>
 
 ## Características
@@ -137,6 +140,49 @@ Opciones: --monitor N, --config <path>
 - **Cambia el monitor equivocado.** Elige el monitor en *Configuración* y pulsa *Aceptar*; su nombre se guarda, de modo que se encuentra el monitor correcto aunque cambie la numeración.
 - **¿Se ejecutó el cambio al apagar?** Abre el registro desde el menú de la bandeja después del siguiente inicio. Ahí figuran el tipo de apagado detectado y el resultado del cambio.
 - **¿Conectado por Escritorio remoto?** Una sesión RDP no tiene acceso a los monitores físicos, así que DDC/CI (los atajos, la línea de estado de la configuración y el cambio al apagar) solo funciona cuando inicias sesión en el propio equipo.
+
+## macOS
+
+DdcSwitch también funciona en el Mac, como app de la barra de menús con las mismas funciones: hasta tres atajos de teclado, cambio antes de apagar (y, si quieres, antes del reposo) y los mismos 10 idiomas. Está escrita en Swift y SwiftUI y se encuentra en [`macos/`](../../macos); no afecta a la versión de Windows.
+
+<p align="center">
+  <img src="../images/settings-macos-es.png" width="560" alt="Ventana de ajustes de DdcSwitch en macOS">
+</p>
+
+**Requisitos**: macOS 13 Ventura o posterior. Hace falta un Mac con chip de Apple: DdcSwitch usa DDC/CI a través de su controlador de pantalla (probado en un M4 Pro por USB‑C y DisplayPort). Los Mac con Intel no son compatibles. El puerto HDMI integrado de los Mac con M1 no transmite DDC/CI: usa USB‑C o DisplayPort.
+
+**Instalación**: descarga `DdcSwitch-<versión>-macos.zip` de la [última versión](https://github.com/pokoblin/DdcSwitch/releases/latest), descomprímelo, mueve `DdcSwitch.app` a *Aplicaciones* y ábrela. La app no está notarizada, así que macOS bloquea el primer inicio: abre *Ajustes del Sistema › Privacidad y seguridad* y haz clic en *Abrir igualmente*. En el primer inicio se abre la ventana de ajustes; activa allí *Abrir al iniciar sesión*, porque el cambio al apagar solo funciona mientras DdcSwitch está abierto.
+
+Para compilarla tú mismo necesitas Xcode o las Command Line Tools (Swift 5.9 o posterior):
+
+```bash
+git clone https://github.com/pokoblin/DdcSwitch.git
+cd DdcSwitch/macos
+./install.sh
+```
+
+`install.sh` compila la app, la copia en `/Applications` y la abre. `./build.sh` solo genera `dist/DdcSwitch.app` y el zip de la versión; `swift test` ejecuta las pruebas.
+
+**Diferencias en el Mac**
+
+- **Los atajos** usan ⌃ ⌥ ⇧ ⌘. Haz clic en el campo del atajo y pulsa las teclas; Esc cancela y Suprimir lo borra. Se registran como los atajos globales de cualquier app, así que no hace falta el permiso de Accesibilidad.
+- **Los ajustes se aplican al instante**, como es habitual en macOS: no hay botón Aceptar. Los problemas se muestran junto al ajuste correspondiente.
+- **Cambio al apagar**: al apagar, reiniciar o cerrar sesión, macOS pide a cada app que salga y le indica el motivo. DdcSwitch cambia al apagar, omite los reinicios (salvo que desactives *No al reiniciar*) y nunca cambia al cerrar sesión. `sudo shutdown` en Terminal no pide a las apps que salgan, así que no cambia. Si otra app cancela el apagado después de que DdcSwitch haya salido, la entrada ya se habrá cambiado.
+- **Cambio antes del reposo**: macOS espera a que la entrada se cambie antes de entrar en reposo.
+- **Archivos**: los ajustes en `~/Library/Application Support/DdcSwitch/config.ini` (las mismas claves que en Windows, más `appearance` = `auto`/`light`/`dark`; los atajos se escriben como `Ctrl+Opt+Cmd+Left`, y `Alt`/`Win` se leen como Opción/Comando), el registro en `~/Library/Logs/DdcSwitch/DdcSwitch.log`.
+- **Línea de comandos**: las mismas opciones salvo `--detect`, por ejemplo `/Applications/DdcSwitch.app/Contents/MacOS/DdcSwitch --list`.
+- **Traducciones** de la app para Mac: en [`macos/Sources/DdcSwitch/I18n.swift`](../../macos/Sources/DdcSwitch/I18n.swift); `swift test` comprueba los marcadores.
+
+<details>
+<summary>Desinstalar en macOS</summary>
+
+Desactiva primero *Abrir al iniciar sesión* en los ajustes y después ejecuta:
+
+```bash
+/Applications/DdcSwitch.app/Contents/MacOS/DdcSwitch --quit
+rm -rf /Applications/DdcSwitch.app ~/Library/Application\ Support/DdcSwitch ~/Library/Logs/DdcSwitch
+```
+</details>
 
 ## Contribuir
 

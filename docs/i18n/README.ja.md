@@ -5,13 +5,15 @@
 <h1 align="center">DdcSwitch</h1>
 
 <p align="center">
-  Windows からモニターの入力を切り替え――ショートカットで、<br>
-  または Windows のシャットダウン直前に自動で。
+  Windows や macOS からモニターの入力を切り替え――ショートカットで、<br>
+  またはシャットダウン直前に自動で。
 </p>
 
 <p align="center">
   <img alt="Windows 10 | 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?logo=windows&logoColor=white">
+  <img alt="macOS 13+" src="https://img.shields.io/badge/macOS-13%2B-000000?logo=apple&logoColor=white">
   <img alt="Written in Rust" src="https://img.shields.io/badge/Rust-stable-B7410E?logo=rust&logoColor=white">
+  <img alt="Swift and SwiftUI" src="https://img.shields.io/badge/Swift-SwiftUI-F05138?logo=swift&logoColor=white">
   <a href="../../LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-2EA44F"></a>
   <img alt="10 languages" src="https://img.shields.io/badge/languages-10-8A63D2">
 </p>
@@ -36,7 +38,8 @@
 **DdcSwitch** は、オンスクリーンメニューと同じ通信経路である [DDC/CI](https://en.wikipedia.org/wiki/Display_Data_Channel) でモニターを制御します。ショートカットを押せば切り替わり、Windows をシャットダウンするときには画面をもう一方のコンピューターに自動で引き渡します。
 
 <p align="center">
-  <img src="../images/settings-ja.png" width="700" alt="DdcSwitch 設定ウィンドウ">
+  <img src="../images/settings-ja.png" width="410" alt="DdcSwitch 設定ウィンドウ (Windows)">
+  <img src="../images/settings-macos.png" width="392" alt="DdcSwitch 設定ウィンドウ (macOS)">
 </p>
 
 ## 機能
@@ -137,6 +140,49 @@ DdcSwitch.exe --quit            実行中のトレイアプリに終了を要求
 - **別のモニターが切り替わる。** *設定* でモニターを選んで *OK* を押してください。モニター名が保存されるので、番号が変わっても正しいモニターが見つかります。
 - **シャットダウン時の切り替えは実行された？** 次回起動後にトレイメニューからログを開いてください。検出したシャットダウンの種類と切り替えの結果が記録されています。
 - **リモート デスクトップで接続していますか？** RDP セッションからは物理モニターにアクセスできないため、DDC/CI（ショートカット、設定画面の状態表示、シャットダウン時の切り替え）は PC 本体でサインインしているときだけ動作します。
+
+## macOS
+
+DdcSwitch は Mac でも動きます。同じ機能を持つメニューバーアプリです：最大 3 つのキーボードショートカット、シャットダウン前の切り替え（スリープ前も選択可）、そして同じ 10 言語。Swift と SwiftUI で書かれていて [`macos/`](../../macos) にあり、Windows 版には影響しません。
+
+<p align="center">
+  <img src="../images/settings-macos-ja.png" width="560" alt="macOS 版 DdcSwitch の設定ウインドウ">
+</p>
+
+**動作環境**：macOS 13 Ventura 以降。Apple シリコン搭載の Mac が必要です。DdcSwitch はディスプレイコントローラ経由で DDC/CI を送受信します（M4 Pro で USB‑C と DisplayPort を使って確認済み）。Intel Mac には対応していません。M1 Mac の内蔵 HDMI ポートは DDC/CI を通さないので、USB‑C か DisplayPort を使ってください。
+
+**インストール**：[最新リリース](https://github.com/pokoblin/DdcSwitch/releases/latest)から `DdcSwitch-<バージョン>-macos.zip` をダウンロードして展開し、`DdcSwitch.app` を「アプリケーション」フォルダに移動して開きます。公証を受けていないため、最初の起動は macOS にブロックされます。「システム設定 › プライバシーとセキュリティ」を開き、「このまま開く」をクリックしてください。初回起動時には設定ウインドウが開くので、「ログイン時に起動」をオンにします。シャットダウン時の切り替えは DdcSwitch の起動中にしか働かないためです。
+
+自分でビルドするには Xcode またはコマンドラインツール（Swift 5.9 以降）が必要です：
+
+```bash
+git clone https://github.com/pokoblin/DdcSwitch.git
+cd DdcSwitch/macos
+./install.sh
+```
+
+`install.sh` はアプリをビルドし、`/Applications` にコピーして起動します。`./build.sh` は `dist/DdcSwitch.app` とリリース用 zip のビルドだけを行い、`swift test` でテストを実行します。
+
+**Mac 版で異なる点**
+
+- **ショートカット**は ⌃ ⌥ ⇧ ⌘ を使います。ショートカット欄をクリックしてキーを押してください。Esc でキャンセル、Delete で消去します。通常のアプリのグローバルショートカットとして登録されるので、アクセシビリティの許可は不要です。
+- **設定はすぐに反映されます**。macOS の慣例どおり「OK」ボタンはありません。問題があれば該当する設定の横に表示されます。
+- **シャットダウン時の切り替え**：シャットダウン、再起動、ログアウトのとき、macOS は各アプリに理由を添えて終了を求めます。DdcSwitch はシャットダウンなら切り替え、再起動は（「再起動時は切り替えない」をオフにしない限り）スキップし、ログアウトでは切り替えません。ターミナルの `sudo shutdown` はアプリに終了を求めないため、切り替えは行われません。DdcSwitch の終了後に別のアプリがシャットダウンを取り消した場合、入力はすでに切り替わっています。
+- **スリープ時の切り替え**：macOS は入力の切り替えが終わるのを待ってからスリープします。
+- **ファイル**：設定は `~/Library/Application Support/DdcSwitch/config.ini`（キーは Windows 版と同じで、`appearance` = `auto`/`light`/`dark` が加わります。ショートカットは `Ctrl+Opt+Cmd+Left` のように書かれ、`Alt`/`Win` は Option/Command として読み込まれます）、ログは `~/Library/Logs/DdcSwitch/DdcSwitch.log` です。
+- **コマンドライン**：`--detect` 以外は同じオプションです。例：`/Applications/DdcSwitch.app/Contents/MacOS/DdcSwitch --list`
+- **翻訳**：Mac 版の UI 文字列は [`macos/Sources/DdcSwitch/I18n.swift`](../../macos/Sources/DdcSwitch/I18n.swift) にあります。`swift test` がプレースホルダをチェックします。
+
+<details>
+<summary>macOS でのアンインストール</summary>
+
+先に設定で「ログイン時に起動」をオフにしてから、次を実行します：
+
+```bash
+/Applications/DdcSwitch.app/Contents/MacOS/DdcSwitch --quit
+rm -rf /Applications/DdcSwitch.app ~/Library/Application\ Support/DdcSwitch ~/Library/Logs/DdcSwitch
+```
+</details>
 
 ## コントリビュート
 
