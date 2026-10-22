@@ -134,6 +134,7 @@ Options: --monitor N, --config <path>
 - **"Could not read the current input".** Check that DDC/CI is enabled in the monitor menu. Many monitors only answer DDC/CI on the input that is currently shown, and some docks or KVM switches block it.
 - **The wrong monitor is switched.** Pick the monitor in *Settings* and press *OK*; its name is saved so the right one is found even if the numbering changes.
 - **Did the shutdown switch run?** Open the log from the tray menu after the next start. It records the shutdown type that was detected and the result of the switch.
+- **Connected over Remote Desktop?** An RDP session has no access to the physical monitors, so DDC/CI (hotkeys, the status line in *Settings* and the shutdown switch) only works while you are signed in at the PC itself.
 
 ## Contributing
 

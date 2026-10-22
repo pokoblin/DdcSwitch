@@ -134,6 +134,7 @@ Opções: --monitor N, --config <path>
 - **"Não foi possível ler a entrada atual".** Verifique se o DDC/CI está ativado no menu do monitor. Muitos monitores só respondem ao DDC/CI na entrada que está sendo exibida, e algumas docks ou switches KVM o bloqueiam.
 - **O monitor errado é trocado.** Escolha o monitor em *Configurações* e clique em *OK*; o nome dele é salvo, para que o monitor certo seja encontrado mesmo que a numeração mude.
 - **A troca ao desligar funcionou?** Abra o log pelo menu da bandeja depois da próxima inicialização. Ele registra o tipo de desligamento detectado e o resultado da troca.
+- **Conectado pela Área de Trabalho Remota?** Uma sessão RDP não tem acesso aos monitores físicos, então o DDC/CI (atalhos, a linha de status das configurações e a troca ao desligar) só funciona quando você entra diretamente no próprio PC.
 
 ## Contribuindo
 

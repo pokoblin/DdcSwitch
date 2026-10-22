@@ -134,6 +134,7 @@ Opciones: --monitor N, --config <path>
 - **«No se pudo leer la entrada actual».** Comprueba que DDC/CI esté activado en el menú del monitor. Muchos monitores solo responden a DDC/CI en la entrada que se está mostrando, y algunos docks o conmutadores KVM lo bloquean.
 - **Cambia el monitor equivocado.** Elige el monitor en *Configuración* y pulsa *Aceptar*; su nombre se guarda, de modo que se encuentra el monitor correcto aunque cambie la numeración.
 - **¿Se ejecutó el cambio al apagar?** Abre el registro desde el menú de la bandeja después del siguiente inicio. Ahí figuran el tipo de apagado detectado y el resultado del cambio.
+- **¿Conectado por Escritorio remoto?** Una sesión RDP no tiene acceso a los monitores físicos, así que DDC/CI (los atajos, la línea de estado de la configuración y el cambio al apagar) solo funciona cuando inicias sesión en el propio equipo.
 
 ## Contribuir
 

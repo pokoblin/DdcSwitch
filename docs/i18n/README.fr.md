@@ -134,6 +134,7 @@ Options : --monitor N, --config <path>
 - **« Impossible de lire l'entrée actuelle .** Vérifiez que le DDC/CI est activé dans le menu de l'écran. Beaucoup d'écrans ne répondent au DDC/CI que sur l'entrée actuellement affichée, et certains docks ou commutateurs KVM le bloquent.
 - **Ce n'est pas le bon écran qui bascule.** Choisissez l'écran dans *Paramètres* et cliquez sur *OK*  son nom est enregistré, si bien que le bon écran est retrouvé même si la numérotation change.
 - **La bascule à l'arrêt a-t-elle eu lieu ** Ouvrez le journal depuis le menu de la zone de notification au démarrage suivant. Il indique le type d'arrêt détecté et le résultat de la bascule.
+- **Connecté via le Bureau à distance ?** Une session RDP n'a pas accès aux écrans physiques : DDC/CI (raccourcis, ligne d'état des paramètres et bascule à l'arrêt) ne fonctionne que si vous êtes connecté directement sur le PC.
 
 ## Contribuer
 

@@ -134,6 +134,7 @@ Optionen: --monitor N, --config <path>
 - **„Aktueller Eingang konnte nicht gelesen werden“.** Prüfen Sie, ob DDC/CI im Monitormenü aktiviert ist. Viele Monitore antworten auf DDC/CI nur über den gerade angezeigten Eingang, und manche Docks oder KVM-Switches blockieren es.
 - **Der falsche Monitor wird umgeschaltet.** Wählen Sie den Monitor unter *Einstellungen* aus und klicken Sie auf *OK*. Sein Name wird gespeichert, sodass der richtige Monitor auch dann gefunden wird, wenn sich die Nummerierung ändert.
 - **Hat das Umschalten beim Herunterfahren geklappt?** Öffnen Sie nach dem nächsten Start das Protokoll über das Tray-Menü. Dort steht, welche Art des Herunterfahrens erkannt wurde und wie das Umschalten ausging.
+- **Per Remotedesktop verbunden?** Eine RDP-Sitzung hat keinen Zugriff auf die physischen Monitore. DDC/CI (Tastenkombinationen, Statuszeile der Einstellungen und Umschalten beim Herunterfahren) funktioniert daher nur, wenn Sie direkt am PC angemeldet sind.
 
 ## Mitwirken
 
