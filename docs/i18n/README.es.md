@@ -60,8 +60,8 @@ Un monitor y dos equipos: por ejemplo, un PC con Windows por HDMI y un MacBook p
 DdcSwitch se compila desde el código fuente con [Rust](https://rustup.rs/) (toolchain MSVC):
 
 ```powershell
-git clone https://github.com/pokoblin/ddcctl-windows.git
-cd ddcctl-windows
+git clone https://github.com/pokoblin/DdcSwitch.git
+cd DdcSwitch
 .\install.ps1
 ```
 

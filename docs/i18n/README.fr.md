@@ -60,8 +60,8 @@ Un écran, deux ordinateurs  par exemple un PC Windows en HDMI et un MacBook e
 DdcSwitch se compile depuis les sources avec [Rust](https://rustup.rs/) (chaîne d'outils MSVC) 
 
 ```powershell
-git clone https://github.com/pokoblin/ddcctl-windows.git
-cd ddcctl-windows
+git clone https://github.com/pokoblin/DdcSwitch.git
+cd DdcSwitch
 .\install.ps1
 ```
 

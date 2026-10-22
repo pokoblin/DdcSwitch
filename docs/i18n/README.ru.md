@@ -60,8 +60,8 @@
 DdcSwitch собирается из исходников с помощью [Rust](https://rustup.rs/) (тулчейн MSVC):
 
 ```powershell
-git clone https://github.com/pokoblin/ddcctl-windows.git
-cd ddcctl-windows
+git clone https://github.com/pokoblin/DdcSwitch.git
+cd DdcSwitch
 .\install.ps1
 ```
 

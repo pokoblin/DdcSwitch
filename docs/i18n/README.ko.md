@@ -60,8 +60,8 @@
 DdcSwitch는 [Rust](https://rustup.rs/)(MSVC 툴체인)로 소스에서 빌드합니다.
 
 ```powershell
-git clone https://github.com/pokoblin/ddcctl-windows.git
-cd ddcctl-windows
+git clone https://github.com/pokoblin/DdcSwitch.git
+cd DdcSwitch
 .\install.ps1
 ```
 

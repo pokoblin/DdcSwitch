@@ -60,8 +60,8 @@ O **DdcSwitch** conversa com o monitor via [DDC/CI](https://en.wikipedia.org/wik
 O DdcSwitch é compilado a partir do código-fonte com [Rust](https://rustup.rs/) (toolchain MSVC):
 
 ```powershell
-git clone https://github.com/pokoblin/ddcctl-windows.git
-cd ddcctl-windows
+git clone https://github.com/pokoblin/DdcSwitch.git
+cd DdcSwitch
 .\install.ps1
 ```
 

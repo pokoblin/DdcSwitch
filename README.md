@@ -60,8 +60,8 @@ One monitor, two computers – say a Windows PC on HDMI and a MacBook on USB‑C
 DdcSwitch is built from source with [Rust](https://rustup.rs/) (MSVC toolchain):
 
 ```powershell
-git clone https://github.com/pokoblin/ddcctl-windows.git
-cd ddcctl-windows
+git clone https://github.com/pokoblin/DdcSwitch.git
+cd DdcSwitch
 .\install.ps1
 ```
 

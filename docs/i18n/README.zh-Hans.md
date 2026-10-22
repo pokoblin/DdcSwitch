@@ -60,8 +60,8 @@
 DdcSwitch 需使用 [Rust](https://rustup.rs/)（MSVC 工具链）从源码构建：
 
 ```powershell
-git clone https://github.com/pokoblin/ddcctl-windows.git
-cd ddcctl-windows
+git clone https://github.com/pokoblin/DdcSwitch.git
+cd DdcSwitch
 .\install.ps1
 ```
 

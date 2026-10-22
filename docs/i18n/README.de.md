@@ -60,8 +60,8 @@ Ein Monitor, zwei Rechner – etwa ein Windows-PC an HDMI und ein MacBook an USB
 DdcSwitch wird mit [Rust](https://rustup.rs/) (MSVC-Toolchain) aus dem Quellcode gebaut:
 
 ```powershell
-git clone https://github.com/pokoblin/ddcctl-windows.git
-cd ddcctl-windows
+git clone https://github.com/pokoblin/DdcSwitch.git
+cd DdcSwitch
 .\install.ps1
 ```
 
