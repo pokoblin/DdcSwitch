@@ -10,6 +10,7 @@ use windows::Win32::UI::Input::KeyboardAndMouse::EnableWindow;
 use windows::Win32::UI::WindowsAndMessaging::*;
 
 use crate::config::{self, Binding, Config, MOD_ALT, MOD_CONTROL, MOD_SHIFT, MOD_WIN};
+use crate::i18n::{self, fmt, t};
 use crate::{autostart, ddc};
 
 const CLASS: PCWSTR = w!("DdcSwitch.Settings");
@@ -26,6 +27,7 @@ const IDC_SD_RESTART: i32 = 1203;
 const IDC_SLEEP: i32 = 1204;
 const IDC_AUTOSTART: i32 = 1205;
 const IDC_NOTIFY: i32 = 1206;
+const IDC_LANGUAGE: i32 = 1207;
 const IDC_OPEN_LOG: i32 = 1301;
 
 // Control styles / messages not worth importing from several modules.
@@ -46,6 +48,11 @@ const HOTKEYF_CONTROL: u32 = 0x2;
 const HOTKEYF_ALT: u32 = 0x4;
 const HOTKEYF_EXT: u32 = 0x8;
 const BST_CHECKED: usize = 1;
+
+/// Client area size in 96-DPI pixels.
+const CLIENT_W: i32 = 700;
+const CLIENT_H: i32 = 582;
+const GROUP_W: i32 = CLIENT_W - 24;
 
 /// Offered in the input drop-downs until the monitor reports its own list.
 const STANDARD_INPUTS: &[u32] = &[15, 16, 17, 18, 27];
@@ -70,6 +77,7 @@ struct Ui {
     sleep: HWND,
     autostart: HWND,
     notify: HWND,
+    language: HWND,
     monitor_names: Vec<String>,
     probe_seq: usize,
     base: Config,
@@ -163,6 +171,11 @@ fn enable(h: HWND, on: bool) {
     }
 }
 
+fn add_item(combo: HWND, text: &str) {
+    let item = HSTRING::from(text);
+    send(combo, CB_ADDSTRING, 0, item.as_ptr() as isize);
+}
+
 fn message_box(owner: HWND, text: &str, style: MESSAGEBOX_STYLE) {
     unsafe {
         MessageBoxW(Some(owner), &HSTRING::from(text), w!("DdcSwitch"), style);
@@ -174,8 +187,7 @@ fn fill_input_combo(h: HWND, values: &[u32]) {
     let text = get_text(h);
     send(h, CB_RESETCONTENT, 0, 0);
     for &v in values {
-        let item = HSTRING::from(config::input_label(v));
-        send(h, CB_ADDSTRING, 0, item.as_ptr() as isize);
+        add_item(h, &config::input_label(v));
     }
     set_text(h, &text);
 }
@@ -255,7 +267,7 @@ impl Builder {
     }
 
     fn group(&self, text: &str, y: i32, h: i32) {
-        self.add(w!("BUTTON"), text, STYLE_GROUPBOX, WINDOW_EX_STYLE(0), 12, y, 636, h, -1);
+        self.add(w!("BUTTON"), text, STYLE_GROUPBOX, WINDOW_EX_STYLE(0), 12, y, GROUP_W, h, -1);
     }
 
     fn check(&self, text: &str, x: i32, y: i32, w: i32, id: i32) -> HWND {
@@ -269,7 +281,7 @@ impl Builder {
 
     fn combo(&self, editable: bool, x: i32, y: i32, w: i32, id: i32) -> HWND {
         let style = if editable { STYLE_CB_DROPDOWN | STYLE_ES_AUTOHSCROLL } else { STYLE_CB_DROPDOWNLIST };
-        self.add(w!("COMBOBOX"), "", style | TABSTOP | VSCROLL, WINDOW_EX_STYLE(0), x, y, w, 240, id)
+        self.add(w!("COMBOBOX"), "", style | TABSTOP | VSCROLL, WINDOW_EX_STYLE(0), x, y, w, 300, id)
     }
 }
 
@@ -283,18 +295,20 @@ pub fn open(cfg: Config) {
         }
         return;
     }
+    let tr = t();
     unsafe {
         let dpi = GetDpiForSystem();
         let hinst = HINSTANCE(HINST.with(|c| c.get()) as *mut _);
         let style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
         let ex = WS_EX_CONTROLPARENT | WS_EX_APPWINDOW;
         let scale = |v: i32| v * dpi as i32 / 96;
-        let mut rc = RECT { left: 0, top: 0, right: scale(660), bottom: scale(552) };
+        let mut rc = RECT { left: 0, top: 0, right: scale(CLIENT_W), bottom: scale(CLIENT_H) };
         let _ = AdjustWindowRectExForDpi(&mut rc, style, false, ex, dpi);
         let (w, h) = (rc.right - rc.left, rc.bottom - rc.top);
         let x = (GetSystemMetrics(SM_CXSCREEN) - w) / 2;
         let y = (GetSystemMetrics(SM_CYSCREEN) - h) / 2;
-        let Ok(hwnd) = CreateWindowExW(ex, CLASS, w!("DdcSwitch 设置"), style, x, y, w, h, None, None, Some(hinst), None)
+        let Ok(hwnd) =
+            CreateWindowExW(ex, CLASS, &HSTRING::from(tr.settings_title), style, x, y, w, h, None, None, Some(hinst), None)
         else {
             return;
         };
@@ -315,53 +329,49 @@ pub fn open(cfg: Config) {
         let b = Builder { parent: hwnd, font, dpi: dpi as i32, hinst };
 
         // Monitor
-        b.group("显示器", 10, 86);
-        b.label("显示器：", 26, 38, 60);
-        let monitor = b.combo(false, 90, 34, 420, IDC_MONITOR);
-        b.button("重新检测", 522, 33, 112, IDC_REDETECT, false);
-        let status = b.label("", 26, 68, 610);
+        b.group(tr.grp_monitor, 10, 86);
+        b.label(tr.lbl_monitor, 26, 38, 80);
+        let monitor = b.combo(false, 110, 34, 440, IDC_MONITOR);
+        b.button(tr.btn_redetect, 562, 33, 112, IDC_REDETECT, false);
+        let status = b.label("", 26, 68, 650);
 
         // Hotkeys
-        b.group("快捷键（Windows 使用中随时切换）", 106, 172);
-        b.label("启用", 22, 128, 36);
-        b.label("名称", 60, 128, 170);
-        b.label("目标输入源", 240, 128, 150);
-        b.label("快捷键（点击后按下组合键）", 400, 128, 236);
+        b.group(tr.grp_hotkeys, 106, 172);
+        b.label(tr.col_enabled, 22, 128, 46);
+        b.label(tr.col_name, 72, 128, 180);
+        b.label(tr.col_input, 262, 128, 150);
+        b.label(tr.col_hotkey, 422, 128, 262);
         let mut rows = Vec::new();
         for i in 0..config::HOTKEY_SLOTS as i32 {
             let y = 150 + i * 32;
             let id = IDC_ROW_BASE + i * 10;
             rows.push(Row {
-                enabled: b.check("", 30, y + 1, 22, id),
-                name: b.add(w!("EDIT"), "", STYLE_ES_AUTOHSCROLL | TABSTOP, WS_EX_CLIENTEDGE, 60, y, 170, 24, id + 1),
-                input: b.combo(true, 240, y, 150, id + 2),
-                hotkey: b.add(w!("msctls_hotkey32"), "", TABSTOP, WS_EX_CLIENTEDGE, 400, y, 160, 24, id + 3),
-                win: b.check("+ Win", 570, y + 1, 66, id + 4),
+                enabled: b.check("", 36, y + 1, 22, id),
+                name: b.add(w!("EDIT"), "", STYLE_ES_AUTOHSCROLL | TABSTOP, WS_EX_CLIENTEDGE, 72, y, 180, 24, id + 1),
+                input: b.combo(true, 262, y, 150, id + 2),
+                hotkey: b.add(w!("msctls_hotkey32"), "", TABSTOP, WS_EX_CLIENTEDGE, 422, y, 170, 24, id + 3),
+                win: b.check("+ Win", 602, y + 1, 76, id + 4),
             });
         }
-        b.label("提示：Win 键无法在快捷键框里录制，需要时请勾选“+ Win”。", 26, 248, 610);
+        b.label(tr.hint_win, 26, 248, 650);
 
         // Shutdown / sleep
-        b.group("关机 / 睡眠", 288, 116);
-        let sd_enabled = b.check("关机前切换到输入源：", 26, 312, 210, IDC_SD_ENABLED);
-        let sd_input = b.combo(true, 240, 310, 150, IDC_SD_INPUT);
-        let sd_restart = b.check(
-            "重启时不切换（读取系统事件日志判断是关机还是重启）",
-            26,
-            342,
-            610,
-            IDC_SD_RESTART,
-        );
-        let sleep = b.check("睡眠前也切换到上面的输入源", 26, 370, 610, IDC_SLEEP);
+        b.group(tr.grp_shutdown, 288, 116);
+        let sd_enabled = b.check(tr.chk_shutdown, 26, 312, 300, IDC_SD_ENABLED);
+        let sd_input = b.combo(true, 330, 310, 150, IDC_SD_INPUT);
+        let sd_restart = b.check(tr.chk_skip_restart, 26, 342, 650, IDC_SD_RESTART);
+        let sleep = b.check(tr.chk_sleep, 26, 370, 650, IDC_SLEEP);
 
         // General
-        b.group("常规", 414, 84);
-        let autostart_chk = b.check("开机时自动运行（关机切换需要本程序在后台运行）", 26, 438, 610, IDC_AUTOSTART);
-        let notify = b.check("切换成功时也显示通知（失败时总是通知）", 26, 466, 610, IDC_NOTIFY);
+        b.group(tr.grp_general, 414, 114);
+        let autostart_chk = b.check(tr.chk_autostart, 26, 438, 650, IDC_AUTOSTART);
+        let notify = b.check(tr.chk_notify, 26, 466, 650, IDC_NOTIFY);
+        b.label(tr.lbl_language, 26, 498, 150);
+        let language = b.combo(false, 180, 494, 240, IDC_LANGUAGE);
 
-        b.button("查看日志", 12, 510, 112, IDC_OPEN_LOG, false);
-        b.button("确定", 440, 510, 100, IDC_OK, true);
-        b.button("取消", 548, 510, 100, IDC_CANCEL, false);
+        b.button(tr.btn_open_log, 12, 540, 140, IDC_OPEN_LOG, false);
+        b.button(tr.btn_ok, 476, 540, 100, IDC_OK, true);
+        b.button(tr.btn_cancel, 588, 540, 100, IDC_CANCEL, false);
 
         // Fill in values
         for (row, bind) in rows.iter().zip(&cfg.bindings) {
@@ -381,6 +391,16 @@ pub fn open(cfg: Config) {
         set_checked(autostart_chk, autostart::is_enabled());
         set_checked(notify, cfg.notify_success);
 
+        add_item(language, tr.lang_auto);
+        for (_, strings) in i18n::LANGUAGES {
+            add_item(language, strings.lang_name);
+        }
+        let lang_sel = i18n::LANGUAGES
+            .iter()
+            .position(|(code, _)| code.eq_ignore_ascii_case(&cfg.language))
+            .map_or(0, |i| i + 1);
+        send(language, CB_SETCURSEL, lang_sel, 0);
+
         UI.with(|u| {
             *u.borrow_mut() = Some(Ui {
                 hwnd,
@@ -394,6 +414,7 @@ pub fn open(cfg: Config) {
                 sleep,
                 autostart: autostart_chk,
                 notify,
+                language,
                 monitor_names: Vec::new(),
                 probe_seq: 0,
                 base: cfg,
@@ -416,12 +437,10 @@ fn fill_monitors() {
         let previous = u.monitor_names.get(send(u.monitor, CB_GETCURSEL, 0, 0).max(0) as usize).cloned();
         send(u.monitor, CB_RESETCONTENT, 0, 0);
         for (i, n) in names.iter().enumerate() {
-            let item = HSTRING::from(format!("{}: {}", i + 1, n));
-            send(u.monitor, CB_ADDSTRING, 0, item.as_ptr() as isize);
+            add_item(u.monitor, &format!("{}: {}", i + 1, n));
         }
         if names.is_empty() {
-            let item = HSTRING::from("（未检测到支持 DDC/CI 的显示器）");
-            send(u.monitor, CB_ADDSTRING, 0, item.as_ptr() as isize);
+            add_item(u.monitor, t().no_monitors);
         }
         let wanted = previous.unwrap_or_else(|| u.base.monitor_name.clone());
         let sel = names
@@ -445,7 +464,7 @@ fn probe() {
         let mut u = u.borrow_mut();
         let u = u.as_mut()?;
         u.probe_seq += 1;
-        set_text(u.status, "正在读取显示器信息…");
+        set_text(u.status, t().status_reading);
         let (index, name) = selected_monitor(u);
         Some((u.hwnd, index, name, u.probe_seq))
     }) else {
@@ -471,14 +490,16 @@ fn on_probe_done(p: Probe) {
         if p.seq != u.probe_seq {
             return;
         }
+        let tr = t();
         let mut text = match &p.current {
-            Ok(cur) => format!("当前输入源：{}", config::input_label(*cur)),
-            Err(e) => format!("读取当前输入源失败：{e}"),
+            Ok(cur) => fmt(tr.status_current, &[&config::input_label(*cur)]),
+            Err(e) => fmt(tr.status_read_failed, &[e]),
         };
         if let Ok(list) = &p.inputs {
             if !list.is_empty() {
                 let labels: Vec<String> = list.iter().map(|&v| config::input_label(v)).collect();
-                text += &format!("    显示器报告支持：{}", labels.join("、"));
+                text += "    ";
+                text += &fmt(tr.status_supported, &[&labels.join(tr.list_sep)]);
                 for row in &u.rows {
                     fill_input_combo(row.input, list);
                 }
@@ -507,6 +528,7 @@ fn update_enabled_states() {
 }
 
 fn collect(u: &Ui) -> Result<(Config, bool), String> {
+    let tr = t();
     let mut cfg = u.base.clone();
     if !u.monitor_names.is_empty() {
         let (index, name) = selected_monitor(u);
@@ -528,16 +550,16 @@ fn collect(u: &Ui) -> Result<(Config, bool), String> {
         }
         if enabled {
             if input.is_none() {
-                return Err(format!("第 {n} 行：输入源“{input_text}”无效，请填写数字（例如 25）。"));
+                return Err(fmt(tr.err_row_input, &[&n, &input_text]));
             }
             if vk == 0 {
-                return Err(format!("第 {n} 行：请点击快捷键框并按下组合键，或取消勾选“启用”。"));
+                return Err(fmt(tr.err_row_no_hotkey, &[&n]));
             }
             if mods == 0 && !(0x70..=0x87).contains(&vk) {
-                return Err(format!("第 {n} 行：快捷键至少要包含 Ctrl / Alt / Shift / Win 中的一个。"));
+                return Err(fmt(tr.err_row_modifier, &[&n]));
             }
             if used.contains(&(mods, vk)) {
-                return Err(format!("第 {n} 行：快捷键 {} 重复了。", config::hotkey_to_string(mods, vk)));
+                return Err(fmt(tr.err_row_duplicate, &[&n, &config::hotkey_to_string(mods, vk)]));
             }
             used.push((mods, vk));
         }
@@ -555,12 +577,17 @@ fn collect(u: &Ui) -> Result<(Config, bool), String> {
     let sd_text = get_text(u.sd_input);
     match config::parse_input(&sd_text) {
         Some(v) => cfg.shutdown_input = v,
-        None if cfg.shutdown_switch => return Err(format!("关机切换的输入源“{sd_text}”无效。")),
+        None if cfg.shutdown_switch => return Err(fmt(tr.err_shutdown_input, &[&sd_text])),
         None => {}
     }
     cfg.skip_on_restart = checked(u.sd_restart);
     cfg.sleep_switch = checked(u.sleep);
     cfg.notify_success = checked(u.notify);
+    let lang_sel = send(u.language, CB_GETCURSEL, 0, 0);
+    cfg.language = match lang_sel {
+        1.. => i18n::LANGUAGES.get(lang_sel as usize - 1).map_or("auto", |(code, _)| code).to_string(),
+        _ => "auto".to_string(),
+    };
     Ok((cfg, checked(u.autostart)))
 }
 
@@ -570,7 +597,7 @@ fn on_ok(hwnd: HWND) {
         Some(Ok((cfg, autostart_on))) => {
             let errors = crate::apply_settings(cfg, autostart_on);
             if !errors.is_empty() {
-                message_box(hwnd, &format!("设置已保存，但有以下问题：\n\n{}", errors.join("\n")), MB_ICONWARNING);
+                message_box(hwnd, &fmt(t().saved_with_problems, &[&errors.join("\n")]), MB_ICONWARNING);
             }
             unsafe {
                 let _ = DestroyWindow(hwnd);

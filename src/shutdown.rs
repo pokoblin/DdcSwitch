@@ -30,10 +30,10 @@ pub fn detect(max_age_ms: u64) -> (Kind, String) {
             } else {
                 Kind::Unknown
             };
-            (kind, format!("事件 1074: 类型=\"{what}\"，发起者={who}"))
+            (kind, format!("event 1074: type=\"{what}\", initiated by {who}"))
         }
-        Ok(None) => (Kind::Unknown, format!("最近 {} 秒内没有 1074 事件", max_age_ms / 1000)),
-        Err(e) => (Kind::Unknown, format!("读取系统事件日志失败: {e}")),
+        Ok(None) => (Kind::Unknown, format!("no event 1074 in the last {} s", max_age_ms / 1000)),
+        Err(e) => (Kind::Unknown, format!("could not read the System event log: {e}")),
     }
 }
 

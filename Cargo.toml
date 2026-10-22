@@ -1,6 +1,6 @@
 [package]
 name = "ddc-switch"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Tray app that switches the monitor input source over DDC/CI (hotkeys + before shutdown)"
 build = "build.rs"
@@ -14,6 +14,7 @@ version = "0.62"
 features = [
     "Win32_Foundation",
     "Win32_Devices_Display",
+    "Win32_Globalization",
     "Win32_Graphics_Gdi",
     "Win32_Security",
     "Win32_System_Console",

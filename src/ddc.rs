@@ -11,6 +11,8 @@ use windows::Win32::Devices::Display::*;
 use windows::Win32::Foundation::*;
 use windows::Win32::Graphics::Gdi::*;
 
+use crate::i18n::{fmt, t};
+
 /// Serialises DDC/CI traffic: the monitor's I2C bus doesn't like concurrent requests.
 static DDC_LOCK: Mutex<()> = Mutex::new(());
 
@@ -41,7 +43,7 @@ impl Monitors {
         }
         self.0
             .get(index.max(1) - 1)
-            .ok_or_else(|| format!("未找到显示器 #{index}（共检测到 {} 台支持 DDC/CI 的显示器）", self.0.len()))
+            .ok_or_else(|| fmt(t().err_monitor_not_found, &[&index, &self.0.len()]))
     }
 }
 
@@ -167,7 +169,7 @@ pub fn set_vcp(index: usize, name: &str, code: u8, value: u32) -> Result<String,
         }
         last = unsafe { GetLastError().0 };
     }
-    Err(format!("{}: SetVCPFeature(0x{code:02X}, {value}) 失败，错误码 0x{last:08X}", m.name))
+    Err(fmt(t().err_set_failed, &[&m.name, &format!("{last:08X}")]))
 }
 
 /// Reads a VCP feature, returning (current, maximum).
@@ -185,7 +187,7 @@ pub fn get_vcp(index: usize, name: &str, code: u8) -> Result<(u32, u32), String>
         }
         last = unsafe { GetLastError().0 };
     }
-    Err(format!("{}: 读取 VCP 0x{code:02X} 失败，错误码 0x{last:08X}", m.name))
+    Err(fmt(t().err_read_failed, &[&m.name, &format!("{last:08X}")]))
 }
 
 /// Current input source. Only the low byte is meaningful: e.g. Dell answers 0x1111 for HDMI-1 (0x11).
@@ -204,12 +206,12 @@ pub fn capabilities(index: usize, name: &str) -> Result<String, String> {
         unsafe {
             let mut len = 0u32;
             if GetCapabilitiesStringLength(m.handle, &mut len) == 0 || len == 0 {
-                error = format!("{}: 无法读取能力字符串（显示器可能关闭了 DDC/CI）", m.name);
+                error = fmt(t().err_caps_failed, &[&m.name]);
                 continue;
             }
             let mut buf = vec![0u8; len as usize];
             if CapabilitiesRequestAndCapabilitiesReply(m.handle, &mut buf) == 0 {
-                error = format!("{}: 读取能力字符串失败", m.name);
+                error = fmt(t().err_caps_failed, &[&m.name]);
                 continue;
             }
             let end = buf.iter().position(|&b| b == 0).unwrap_or(buf.len());

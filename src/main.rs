@@ -8,6 +8,7 @@ mod autostart;
 mod cli;
 mod config;
 mod ddc;
+mod i18n;
 mod icon;
 mod icon_art;
 mod settings;
@@ -32,6 +33,7 @@ use windows::Win32::UI::Shell::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
 
 use config::{Config, HOTKEY_SLOTS, VCP_INPUT};
+use i18n::{fmt, t};
 
 pub(crate) const MAIN_CLASS: PCWSTR = w!("DdcSwitch.Main");
 const WM_TRAY: u32 = WM_APP + 1;
@@ -119,13 +121,14 @@ fn run_gui(autostarted: bool) {
         }
 
         let (cfg, existed) = Config::load();
+        i18n::apply(&cfg.language);
         if existed {
             autostart::refresh_path();
         } else {
             // First run: the shutdown hook only works while the app runs, so start with Windows by default.
             let _ = cfg.save();
             if let Err(e) = autostart::set(true) {
-                applog::log(format!("设置开机启动失败: {e}"));
+                applog::log(format!("Could not enable start with Windows: {e}"));
             }
         }
 
@@ -164,7 +167,7 @@ fn run_gui(autostarted: bool) {
         ) {
             Ok(h) => h,
             Err(e) => {
-                applog::log(format!("创建窗口失败: {e}"));
+                applog::log(format!("CreateWindowEx failed: {e}"));
                 return;
             }
         };
@@ -173,20 +176,20 @@ fn run_gui(autostarted: bool) {
         APP.with(|a| *a.borrow_mut() = Some(App { hwnd, cfg: cfg.clone(), icon: icon_small }));
 
         if let Err(e) = SetProcessShutdownParameters(SHUTDOWN_LEVEL, 0) {
-            applog::log(format!("SetProcessShutdownParameters 失败: {e}"));
+            applog::log(format!("SetProcessShutdownParameters failed: {e}"));
         }
         tray_add(hwnd);
         let errors = register_hotkeys(hwnd, &cfg);
         applog::log(format!(
-            "启动 v{}，配置: {}，关机切换: {}",
+            "Started v{}, config: {}, switch at shutdown: {}",
             env!("CARGO_PKG_VERSION"),
             config::config_path().display(),
-            if cfg.shutdown_switch { cfg.input_title(cfg.shutdown_input) } else { "关闭".into() }
+            if cfg.shutdown_switch { cfg.input_title(cfg.shutdown_input) } else { "off".into() }
         ));
         if !errors.is_empty() {
-            notify("部分快捷键注册失败", &errors.join("\n"), true);
+            notify(t().hotkeys_failed_title, &errors.join("\n"), true);
         } else if !existed {
-            notify("DdcSwitch 已在后台运行", "点击托盘图标可以切换输入源、修改快捷键和设置。", false);
+            notify(t().running_title, t().running_body, false);
         }
 
         let mut msg = MSG::default();
@@ -213,16 +216,16 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
             let slot = wparam.0;
             let cfg = current_config();
             if let Some(b) = slot.checked_sub(1).and_then(|i| cfg.bindings.get(i)) {
-                switch_async(hwnd, &cfg, b.input, "快捷键");
+                switch_async(hwnd, &cfg, b.input, "hotkey");
             }
             LRESULT(0)
         }
         WM_SWITCH_DONE => {
             let r = Box::from_raw(lparam.0 as *mut SwitchResult);
             if !r.ok {
-                notify("切换输入源失败", &r.message, true);
+                notify(t().switch_failed_title, &r.message, true);
             } else if current_config().notify_success {
-                notify("已切换输入源", &r.message, false);
+                notify(t().switched_title, &r.message, false);
             }
             LRESULT(0)
         }
@@ -231,14 +234,14 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
             LRESULT(0)
         }
         WM_QUERYENDSESSION => {
-            applog::log(format!("收到 WM_QUERYENDSESSION (lParam=0x{:08X})", lparam.0 as u32));
+            applog::log(format!("WM_QUERYENDSESSION (lParam=0x{:08X})", lparam.0 as u32));
             LRESULT(1)
         }
         WM_ENDSESSION => {
             if wparam.0 != 0 {
                 on_end_session(hwnd, lparam.0 as u32);
             } else {
-                applog::log("收到 WM_ENDSESSION(FALSE)：关机已取消");
+                applog::log("WM_ENDSESSION(FALSE): shutdown was cancelled");
             }
             LRESULT(0)
         }
@@ -254,7 +257,7 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
                 let _ = UnregisterHotKey(Some(hwnd), id);
             }
             tray_delete(hwnd);
-            applog::log("退出");
+            applog::log("Exit");
             PostQuitMessage(0);
             LRESULT(0)
         }
@@ -287,7 +290,7 @@ fn switch_async(hwnd: HWND, cfg: &Config, input: u32, source: &'static str) {
             Ok(mon) => (true, format!("{mon} → {title}")),
             Err(e) => (false, e),
         };
-        applog::log(format!("[{source}] 切换到 {title}: {}", if ok { "成功" } else { "失败" }));
+        applog::log(format!("[{source}] switch to {title}: {}", if ok { "ok" } else { "FAILED" }));
         if !ok {
             applog::log(format!("    {message}"));
         }
@@ -304,12 +307,12 @@ fn switch_async(hwnd: HWND, cfg: &Config, input: u32, source: &'static str) {
 fn switch_now(hwnd: HWND, cfg: &Config, reason: &str) {
     let title = cfg.input_title(cfg.shutdown_input);
     unsafe {
-        let _ = ShutdownBlockReasonCreate(hwnd, w!("正在切换显示器输入源…"));
+        let _ = ShutdownBlockReasonCreate(hwnd, &HSTRING::from(t().shutdown_block_reason));
     }
     let started = Instant::now();
     match ddc::set_vcp(cfg.monitor, &cfg.monitor_name, VCP_INPUT, cfg.shutdown_input) {
-        Ok(mon) => applog::log(format!("[{reason}] 已切换 {mon} → {title}（{} ms）", started.elapsed().as_millis())),
-        Err(e) => applog::log(format!("[{reason}] 切换到 {title} 失败: {e}")),
+        Ok(mon) => applog::log(format!("[{reason}] switched {mon} → {title} ({} ms)", started.elapsed().as_millis())),
+        Err(e) => applog::log(format!("[{reason}] switch to {title} FAILED: {e}")),
     }
     unsafe {
         let _ = ShutdownBlockReasonDestroy(hwnd);
@@ -318,17 +321,17 @@ fn switch_now(hwnd: HWND, cfg: &Config, reason: &str) {
 
 fn on_end_session(hwnd: HWND, flags: u32) {
     let cfg = current_config();
-    applog::log(format!("收到 WM_ENDSESSION(TRUE) (lParam=0x{flags:08X})"));
+    applog::log(format!("WM_ENDSESSION(TRUE) (lParam=0x{flags:08X})"));
     if !cfg.shutdown_switch {
-        applog::log("    关机切换未启用，跳过");
+        applog::log("    switching at shutdown is off, skipped");
         return;
     }
     if flags & ES_CLOSEAPP != 0 {
-        applog::log("    只是重启管理器要求关闭本程序（安装/更新），跳过");
+        applog::log("    Restart Manager is only closing this app (install/update), skipped");
         return;
     }
     if flags & ES_LOGOFF != 0 {
-        applog::log("    注销，不是关机，跳过");
+        applog::log("    sign-out, not a shutdown, skipped");
         return;
     }
     if cfg.skip_on_restart {
@@ -341,18 +344,18 @@ fn on_end_session(hwnd: HWND, flags: u32) {
                 std::thread::sleep(Duration::from_millis(250));
             }
             let (k, detail) = shutdown::detect(window);
-            applog::log(format!("    关机类型判断: {k:?} — {detail}"));
+            applog::log(format!("    shutdown type: {k:?} — {detail}"));
             kind = k;
             if k != shutdown::Kind::Unknown {
                 break;
             }
         }
         if kind == shutdown::Kind::Restart {
-            applog::log("    这是重启，不切换输入源");
+            applog::log("    this is a restart, input not switched");
             return;
         }
     }
-    switch_now(hwnd, &cfg, "关机");
+    switch_now(hwnd, &cfg, "shutdown");
 }
 
 fn on_suspend() {
@@ -360,9 +363,9 @@ fn on_suspend() {
     if !cfg.sleep_switch {
         return;
     }
-    applog::log("收到 PBT_APMSUSPEND（即将睡眠）");
+    applog::log("PBT_APMSUSPEND (going to sleep)");
     let hwnd = with_app(|a| a.hwnd).unwrap_or_default();
-    switch_now(hwnd, &cfg, "睡眠");
+    switch_now(hwnd, &cfg, "sleep");
 }
 
 // ---------------------------------------------------------------------------
@@ -380,8 +383,8 @@ fn register_hotkeys(hwnd: HWND, cfg: &Config) -> Vec<String> {
             }
             let text = config::hotkey_to_string(b.mods, b.vk);
             if RegisterHotKey(Some(hwnd), i as i32 + 1, HOT_KEY_MODIFIERS(b.mods) | MOD_NOREPEAT, b.vk).is_err() {
-                applog::log(format!("快捷键 {text} 注册失败"));
-                errors.push(format!("{text} 已被其他程序占用（例如 AutoHotkey 脚本）"));
+                applog::log(format!("Could not register hotkey {text}"));
+                errors.push(fmt(t().hotkey_in_use, &[&text]));
             }
         }
     }
@@ -392,13 +395,14 @@ fn register_hotkeys(hwnd: HWND, cfg: &Config) -> Vec<String> {
 pub fn apply_settings(new: Config, autostart_on: bool) -> Vec<String> {
     let mut errors = Vec::new();
     if let Err(e) = new.save() {
-        errors.push(format!("保存配置失败: {e}"));
+        errors.push(fmt(t().save_failed, &[&e]));
     }
     if autostart_on != autostart::is_enabled() {
         if let Err(e) = autostart::set(autostart_on) {
             errors.push(e);
         }
     }
+    i18n::apply(&new.language);
     let Some(hwnd) = with_app(|a| {
         a.cfg = new.clone();
         a.hwnd
@@ -407,7 +411,7 @@ pub fn apply_settings(new: Config, autostart_on: bool) -> Vec<String> {
     };
     errors.extend(register_hotkeys(hwnd, &new));
     tray_update_tip(hwnd);
-    applog::log("设置已更新");
+    applog::log("Settings updated");
     errors
 }
 
@@ -435,7 +439,7 @@ fn tray_data(hwnd: HWND) -> NOTIFYICONDATAW {
 
 fn tray_tip() -> String {
     let cfg = current_config();
-    let mut tip = String::from("DdcSwitch 显示器输入源切换");
+    let mut tip = String::from(t().app_tagline);
     for b in cfg.bindings.iter().filter(|b| b.enabled && b.vk != 0) {
         tip += &format!("\n{} → {}", config::hotkey_to_string(b.mods, b.vk), cfg.input_title(b.input));
     }
@@ -451,7 +455,7 @@ fn tray_add(hwnd: HWND) {
     unsafe {
         let _ = Shell_NotifyIconW(NIM_DELETE, &nid);
         if !Shell_NotifyIconW(NIM_ADD, &nid).as_bool() {
-            applog::log("添加托盘图标失败");
+            applog::log("Could not add the tray icon");
         }
         nid.Anonymous.uVersion = NOTIFYICON_VERSION_4;
         let _ = Shell_NotifyIconW(NIM_SETVERSION, &nid);
@@ -502,27 +506,27 @@ fn show_menu(hwnd: HWND) {
                 continue;
             }
             any = true;
-            let mut label = format!("切换到 {}", cfg.input_title(b.input));
+            let mut label = fmt(t().menu_switch_to, &[&cfg.input_title(b.input)]);
             if b.vk != 0 {
                 label += &format!("\t{}", config::hotkey_to_string(b.mods, b.vk));
             }
             add(MF_STRING, ID_SWITCH_BASE + i, &label);
         }
         if !any {
-            add(MF_STRING | MF_GRAYED, 0, "（尚未设置快捷键）");
+            add(MF_STRING | MF_GRAYED, 0, t().menu_no_hotkeys);
         }
         add(MF_SEPARATOR, 0, "");
         add(
             MF_STRING | checked(cfg.shutdown_switch),
             ID_TOGGLE_SHUTDOWN,
-            &format!("关机前切换到 {}", cfg.input_title(cfg.shutdown_input)),
+            &fmt(t().menu_shutdown_switch, &[&cfg.input_title(cfg.shutdown_input)]),
         );
-        add(MF_STRING | checked(autostart_on), ID_TOGGLE_AUTOSTART, "开机自动运行");
+        add(MF_STRING | checked(autostart_on), ID_TOGGLE_AUTOSTART, t().menu_autostart);
         add(MF_SEPARATOR, 0, "");
-        add(MF_STRING, ID_SETTINGS, "设置…");
-        add(MF_STRING, ID_OPEN_LOG, "查看日志");
+        add(MF_STRING, ID_SETTINGS, t().menu_settings);
+        add(MF_STRING, ID_OPEN_LOG, t().menu_open_log);
         add(MF_SEPARATOR, 0, "");
-        add(MF_STRING, ID_EXIT, "退出");
+        add(MF_STRING, ID_EXIT, t().menu_exit);
         let _ = SetMenuDefaultItem(menu, ID_SETTINGS as u32, 0);
 
         let mut pt = POINT::default();
@@ -542,7 +546,7 @@ fn show_menu(hwnd: HWND) {
             }
             ID_TOGGLE_AUTOSTART => {
                 if let Err(e) = autostart::set(!autostart_on) {
-                    notify("设置开机启动失败", &e, true);
+                    notify(t().autostart_failed_title, &e, true);
                 }
             }
             ID_SETTINGS => settings::open(cfg),
@@ -552,7 +556,7 @@ fn show_menu(hwnd: HWND) {
             }
             id if id >= ID_SWITCH_BASE && id < ID_SWITCH_BASE + HOTKEY_SLOTS => {
                 let input = cfg.bindings[id - ID_SWITCH_BASE].input;
-                switch_async(hwnd, &cfg, input, "菜单");
+                switch_async(hwnd, &cfg, input, "menu");
             }
             _ => {}
         }
@@ -562,7 +566,7 @@ fn show_menu(hwnd: HWND) {
 pub fn open_log() {
     let path = config::log_path();
     if !path.exists() {
-        applog::log("日志已创建");
+        applog::log("Log created");
     }
     unsafe {
         ShellExecuteW(None, w!("open"), &HSTRING::from(path.as_os_str()), None, None, SW_SHOWNORMAL);

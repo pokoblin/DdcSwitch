@@ -37,6 +37,8 @@ pub struct Config {
     pub skip_on_restart: bool,
     pub sleep_switch: bool,
     pub notify_success: bool,
+    /// "auto" or a language code from `i18n::LANGUAGES`.
+    pub language: String,
 }
 
 impl Default for Config {
@@ -66,6 +68,7 @@ impl Default for Config {
             skip_on_restart: true,
             sleep_switch: false,
             notify_success: false,
+            language: "auto".into(),
         }
     }
 }
@@ -95,7 +98,8 @@ impl Config {
         let Ok(text) = fs::read_to_string(config_path()) else {
             return (cfg, false);
         };
-        for line in text.lines() {
+        // Notepad and PowerShell like to prepend a UTF-8 BOM.
+        for line in text.trim_start_matches('\u{feff}').lines() {
             let line = line.trim();
             if line.is_empty() || line.starts_with('#') || line.starts_with(';') {
                 continue;
@@ -116,6 +120,7 @@ impl Config {
             "skip_on_restart" => self.skip_on_restart = flag(),
             "sleep_switch" => self.sleep_switch = flag(),
             "notify_success" => self.notify_success = flag(),
+            "language" => self.language = val.to_string(),
             _ => {
                 // hotkeyN, hotkeyN_enabled, hotkeyN_name, hotkeyN_input
                 let Some(rest) = key.strip_prefix("hotkey") else { return };
@@ -138,7 +143,8 @@ impl Config {
     }
 
     pub fn save(&self) -> io::Result<()> {
-        let mut s = String::from("# DdcSwitch 配置文件（也可以在托盘图标 -> 设置 中修改）\r\n");
+        let mut s = String::from("# DdcSwitch settings (also editable from the tray icon -> Settings)\r\n");
+        s += &format!("language = {}\r\n", self.language);
         s += &format!("monitor = {}\r\nmonitor_name = {}\r\n\r\n", self.monitor, self.monitor_name);
         for (i, b) in self.bindings.iter().enumerate() {
             let n = i + 1;

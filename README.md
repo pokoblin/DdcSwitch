@@ -1,74 +1,162 @@
-# DdcSwitch
+<p align="center">
+  <img src="docs/images/icon.png" width="96" alt="DdcSwitch icon">
+</p>
 
-Windows 托盘小工具，通过 DDC/CI 切换显示器输入源：
+<h1 align="center">DdcSwitch</h1>
 
-- **关机前自动切换**：在 Windows 11 中点「关机」时先把显示器切到 Mac 所在的输入源（例如 USB-C = 25），然后 Windows 照常关机。
-- **快捷键切换**：Windows 使用中按快捷键随时切换，最多 3 组（默认 `Ctrl+Alt+Win+Right` → 25）。
-- **托盘图标**：点击图标弹出菜单，可以切换输入源、开关关机切换和开机自动运行、打开设置、查看日志、退出。
+<p align="center">
+  Switch your monitor's input source from Windows – with a hotkey,<br>
+  or automatically right before Windows shuts down.
+</p>
 
-它直接调用 Windows 的显示器配置 API（dxva2），不依赖 `ddcctl.exe`，所以关机过程中也不用启动外部进程。
+<p align="center">
+  <img alt="Windows 10 | 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?logo=windows&logoColor=white">
+  <img alt="Written in Rust" src="https://img.shields.io/badge/Rust-stable-B7410E?logo=rust&logoColor=white">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-2EA44F"></a>
+  <img alt="10 languages" src="https://img.shields.io/badge/languages-10-8A63D2">
+</p>
 
-## 安装
+<p align="center">
+  <b>English</b> ·
+  <a href="docs/i18n/README.zh-Hans.md">简体中文</a> ·
+  <a href="docs/i18n/README.zh-Hant.md">繁體中文</a> ·
+  <a href="docs/i18n/README.ja.md">日本語</a> ·
+  <a href="docs/i18n/README.ko.md">한국어</a> ·
+  <a href="docs/i18n/README.es.md">Español</a> ·
+  <a href="docs/i18n/README.fr.md">Français</a> ·
+  <a href="docs/i18n/README.de.md">Deutsch</a> ·
+  <a href="docs/i18n/README.pt-BR.md">Português</a> ·
+  <a href="docs/i18n/README.ru.md">Русский</a>
+</p>
+
+---
+
+One monitor, two computers – say a Windows PC on HDMI and a MacBook on USB‑C. Changing inputs means fumbling with the monitor's buttons, and after you shut Windows down the monitor keeps staring at a dead HDMI port.
+
+**DdcSwitch** talks to the monitor over [DDC/CI](https://en.wikipedia.org/wiki/Display_Data_Channel), the same channel the on-screen menu uses. Press a hotkey to switch, and when you shut Windows down it hands the screen over to the other computer for you.
+
+<p align="center">
+  <img src="docs/images/settings-en.png" width="700" alt="DdcSwitch settings window">
+</p>
+
+## Features
+
+- **Hotkeys** – up to three global shortcuts, each switching to its own input (for example `Ctrl+Alt+Win+→` for the Mac).
+- **Switch before shutdown** – flips the input once shutdown is certain. Restarts, sign-outs and installers closing the app are recognised and skipped.
+- **Optional switch before sleep.**
+- **Tray menu** – switch inputs, toggle the shutdown switch and start-up, open settings and the log.
+- **Knows your monitor** – reads the current input and the inputs the monitor reports, so you don't have to guess codes.
+- **Small and native** – one ~400 KB executable, no runtime, no admin rights, no external tools. It calls the Windows Monitor Configuration API (`dxva2.dll`) directly.
+- **10 languages** – English, 简体中文, 繁體中文, 日本語, 한국어, Español, Français, Deutsch, Português (Brasil), Русский. Follows the Windows display language by default.
+- **Transparent** – every shutdown decision is written to a log you can open from the tray.
+
+## Requirements
+
+- Windows 10 or 11 (x64).
+- A monitor with **DDC/CI enabled** in its on-screen menu. Most external monitors support it over HDMI, DisplayPort and USB‑C. Laptop panels don't, and some docks, adapters and KVM switches don't pass DDC/CI through.
+
+## Installation
+
+DdcSwitch is built from source with [Rust](https://rustup.rs/) (MSVC toolchain):
 
 ```powershell
+git clone https://github.com/pokoblin/ddcctl-windows.git
+cd ddcctl-windows
 .\install.ps1
 ```
 
-这个脚本会编译 release 版，复制到 `%LOCALAPPDATA%\Programs\DdcSwitch\DdcSwitch.exe` 并启动。第一次运行时会自动加入开机启动（注册表 `HKCU\...\Run`），因为程序必须在后台运行才能在关机时切换输入源。
+`install.ps1` builds a release binary, copies it to `%LOCALAPPDATA%\Programs\DdcSwitch\` and starts it. On first launch DdcSwitch adds itself to *Start with Windows*, because the shutdown switch only works while it runs. You can turn that off in the tray menu.
 
-> 原来的 AutoHotkey 脚本如果还绑着 `Ctrl+Alt+Win+Right`，请删掉那一段，否则一次按键会切换两次。
+If the Windows SDK (`rc.exe`) is installed, the icon and version information are embedded in the exe. Without it the build still works.
 
-## 关机时具体做了什么
-
-1. 程序有一个隐藏的顶层窗口，并通过 `SetProcessShutdownParameters` 把自己排在应用程序关机顺序的最后。
-2. 只在 `WM_ENDSESSION(TRUE)` 时才切换，也就是关机已经确定的时候。如果有其他程序阻止关机、Windows 显示“这些应用正在阻止关机”，这个界面仍然显示在 Windows 输入源上；取消关机则什么都不做。
-3. 「重启时不切换」：读取系统日志里的 User32 事件 1074（开始菜单、`shutdown.exe`、Windows 更新等都会在通知应用之前写入这个事件），根据其中的 `power off` / `restart` 判断是关机还是重启。判断不出来时按关机处理，照样切换。
-4. 注销、安装程序通过重启管理器关闭本程序时不切换。
-5. 每一步都写进日志，开机后可以在托盘菜单 → 查看日志 中确认上次关机时发生了什么。
-
-可选：「睡眠前也切换」（`PBT_APMSUSPEND`），默认关闭。
-
-## 设置
-
-托盘菜单 → 设置…：
-
-| 项目 | 说明 |
-| --- | --- |
-| 显示器 | 编号和 `ddcctl -l` 相同；打开设置窗口时会读取当前输入源以及显示器报告支持的输入源 |
-| 快捷键 | 名称 / 目标输入源 / 组合键。Win 键录制不进快捷键框，需要时勾选「+ Win」 |
-| 关机前切换到 | 关机时要切到的输入源 |
-| 重启时不切换 | 见上文 |
-| 开机时自动运行 | 写入或删除 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\DdcSwitch` |
-
-输入源可以直接填数字（`25`）、十六进制（`0x19`）或别名（`hdmi1`、`dp1`、`usbc`）。
-
-配置文件和日志在 `%APPDATA%\DdcSwitch\`（`config.ini`、`DdcSwitch.log`），也可以直接编辑 `config.ini`，改完后重启程序生效。
-
-## 命令行（诊断用）
-
-```
-DdcSwitch.exe --list            列出显示器
-DdcSwitch.exe --get             读取当前输入源
-DdcSwitch.exe --set 25          切换输入源
-DdcSwitch.exe --caps            读取显示器能力字符串和支持的输入源
-DdcSwitch.exe --detect          查看最近一次关机/重启事件的判断结果
-DdcSwitch.exe --quit            退出正在运行的托盘程序
-  可选：--monitor N、--config <路径>
-```
-
-不带参数运行时常驻托盘；如果已经在运行，再启动一次会打开设置窗口。
-
-## 构建
-
-需要 Rust（MSVC 工具链）。如果装了 Windows SDK（`rc.exe`），图标和版本信息会嵌入 exe。
+<details>
+<summary>Uninstall</summary>
 
 ```powershell
-cargo build --release
-cargo test --release
+& "$env:LOCALAPPDATA\Programs\DdcSwitch\DdcSwitch.exe" --quit
+Remove-ItemProperty HKCU:\Software\Microsoft\Windows\CurrentVersion\Run -Name DdcSwitch -ErrorAction SilentlyContinue
+Remove-Item -Recurse "$env:LOCALAPPDATA\Programs\DdcSwitch", "$env:APPDATA\DdcSwitch"
+```
+</details>
+
+## Quick start
+
+1. **Find the input code of the other computer.** Open *Settings* from the tray icon. The status line shows the current input and the inputs your monitor reports, for example `Monitor reports: 25 (0x19), 15 - DP-1, 17 - HDMI-1`. Codes are defined by the VESA MCCS standard (`15` DP‑1, `16` DP‑2, `17` HDMI‑1, `18` HDMI‑2, `27` USB‑C), but vendors deviate: a Dell U2725QE uses `25` for USB‑C. When in doubt, try one with `DdcSwitch.exe --set <code>`.
+2. **Set up a hotkey.** Give the row a name, pick the target input, click the hotkey box and press the keys. The Win key can't be recorded there, so tick **+ Win** if you want it.
+3. **Set the shutdown input.** Under *Shutdown / sleep*, choose the input to switch to before Windows powers off.
+
+## How the shutdown switch works
+
+1. DdcSwitch keeps a hidden top-level window and registers as one of the *last* applications to be notified of a shutdown (`SetProcessShutdownParameters`).
+2. It only acts on `WM_ENDSESSION(TRUE)` – when the shutdown is definite. If another app blocks the shutdown, the *"These apps are preventing shutdown"* screen stays on Windows' input where you can see it, and a cancelled shutdown changes nothing.
+3. **Restart or power off?** Windows doesn't say. Every user-initiated shutdown (Start menu, `shutdown.exe`, Windows Update) writes event 1074 to the System log *before* applications are notified, and its data says `power off` or `restart`. DdcSwitch reads that event. If the type can't be determined, it switches anyway.
+4. Sign-outs and Restart Manager requests (installers updating the app) are ignored.
+5. Each step is logged, so after the next boot *Open log* shows what happened.
+
+## Configuration
+
+Settings live in `%APPDATA%\DdcSwitch\config.ini`. The settings window writes it, but you can edit it by hand too (restart DdcSwitch afterwards).
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `language` | `auto` | `auto`, `en`, `zh-Hans`, `zh-Hant`, `ja`, `ko`, `es`, `fr`, `de`, `pt-BR`, `ru` |
+| `monitor` | `1` | Monitor number, as listed by `--list` |
+| `monitor_name` | | Preferred over `monitor` when a monitor with this name is connected |
+| `hotkeyN` | | `N` = 1–3, e.g. `Ctrl+Alt+Win+Right` |
+| `hotkeyN_enabled` | | `true` / `false` |
+| `hotkeyN_name` | | Label shown in the menu |
+| `hotkeyN_input` | | Input code (`25`, `0x19`, or an alias such as `hdmi1`, `dp1`, `usbc`) |
+| `shutdown_switch` | `true` | Switch before shutdown |
+| `shutdown_input` | `25` | Input to switch to before shutdown or sleep |
+| `skip_on_restart` | `true` | Don't switch when Windows restarts |
+| `sleep_switch` | `false` | Also switch before sleep |
+| `notify_success` | `false` | Show a notification after every switch, not only on failure |
+
+The log is `%APPDATA%\DdcSwitch\DdcSwitch.log`.
+
+## Command line
+
+Without arguments DdcSwitch runs in the tray; starting it again opens the settings of the running instance. For diagnostics:
+
+```text
+DdcSwitch.exe --list            List DDC/CI monitors
+DdcSwitch.exe --get             Read the current input
+DdcSwitch.exe --set 25          Switch input
+DdcSwitch.exe --caps            Read the capabilities string and supported inputs
+DdcSwitch.exe --detect          Show how the last shutdown/restart is classified
+DdcSwitch.exe --quit            Ask the running tray app to exit
+Options: --monitor N, --config <path>
 ```
 
-## 已知限制
+## Troubleshooting
 
-- 显示器的 OSD 菜单里要开启 DDC/CI。
-- 关机后显示器停在 Mac 的输入源；下次开 Windows 时，如果显示器不会自动找信号，需要在 Mac 上切回来（或者按显示器按钮）。
-- 「重启时不切换」依赖系统日志事件 1074。如果系统被强制断电，或者其他工具绕过 `InitiateShutdown` 关机，就判断不出类型，这时按关机处理。
+- **A hotkey does nothing.** Another program owns that combination (an AutoHotkey script, for example). DdcSwitch shows a notification when it can't register a hotkey. Choose another combination or free it in the other program.
+- **"Could not read the current input".** Check that DDC/CI is enabled in the monitor menu. Many monitors only answer DDC/CI on the input that is currently shown, and some docks or KVM switches block it.
+- **The wrong monitor is switched.** Pick the monitor in *Settings* and press *OK*; its name is saved so the right one is found even if the numbering changes.
+- **Did the shutdown switch run?** Open the log from the tray menu after the next start. It records the shutdown type that was detected and the result of the switch.
+
+## Contributing
+
+Issues and pull requests are welcome.
+
+- **Translations**: UI strings are in [`src/i18n.rs`](src/i18n.rs). Copy the `EN` block, translate it and add it to `LANGUAGES`. The compiler makes sure no string is missing, and `cargo test` checks the placeholders. README translations are in [`docs/i18n`](docs/i18n).
+- **Build and test**:
+
+  ```powershell
+  cargo build --release
+  cargo test --release
+  ```
+
+| Path | Contents |
+| --- | --- |
+| `src/main.rs` | Tray icon, hotkeys, shutdown and sleep handling |
+| `src/ddc.rs` | DDC/CI via the Monitor Configuration API |
+| `src/shutdown.rs` | Restart vs. power-off detection (event 1074) |
+| `src/settings.rs` | Settings window |
+| `src/i18n.rs` | Translations |
+| `src/config.rs` | `config.ini`, hotkey and input parsing |
+| `build.rs` | Draws the icon and embeds icon, manifest and version info |
+
+## License
+
+[MIT](LICENSE)

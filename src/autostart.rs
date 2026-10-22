@@ -65,7 +65,7 @@ pub fn set(enable: bool) -> Result<(), String> {
     if err == ERROR_SUCCESS {
         Ok(())
     } else {
-        Err(format!("写入注册表失败，错误码 {}", err.0))
+        Err(crate::i18n::fmt(crate::i18n::t().registry_failed, &[&err.0]))
     }
 }
 
