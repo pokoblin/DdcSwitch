@@ -16,17 +16,21 @@ mod shutdown;
 
 use std::cell::RefCell;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 
-use windows::core::{w, HSTRING, PCWSTR};
+use windows::core::{w, HRESULT, HSTRING, PCWSTR};
 use windows::Win32::Foundation::*;
 use windows::Win32::Graphics::Gdi::HBRUSH;
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::System::Shutdown::{ShutdownBlockReasonCreate, ShutdownBlockReasonDestroy};
 use windows::Win32::System::Threading::{CreateMutexW, SetProcessShutdownParameters};
-use windows::Win32::UI::Controls::{InitCommonControlsEx, ICC_HOTKEY_CLASS, ICC_STANDARD_CLASSES, INITCOMMONCONTROLSEX};
+use windows::Win32::UI::Controls::{
+    InitCommonControlsEx, TaskDialogIndirect, ICC_HOTKEY_CLASS, ICC_STANDARD_CLASSES, INITCOMMONCONTROLSEX, TASKDIALOGCONFIG,
+    TASKDIALOG_NOTIFICATIONS, TDCBF_OK_BUTTON, TDF_ALLOW_DIALOG_CANCELLATION, TDF_ENABLE_HYPERLINKS, TDF_USE_HICON_MAIN,
+    TDN_HYPERLINK_CLICKED,
+};
 use windows::Win32::UI::HiDpi::{SetProcessDpiAwarenessContext, DPI_AWARENESS_CONTEXT_SYSTEM_AWARE};
 use windows::Win32::UI::Input::KeyboardAndMouse::{RegisterHotKey, UnregisterHotKey, HOT_KEY_MODIFIERS, MOD_NOREPEAT};
 use windows::Win32::UI::Shell::*;
@@ -46,6 +50,7 @@ const ID_TOGGLE_SHUTDOWN: usize = 200;
 const ID_TOGGLE_AUTOSTART: usize = 201;
 const ID_SETTINGS: usize = 202;
 const ID_OPEN_LOG: usize = 203;
+const ID_ABOUT: usize = 204;
 const ID_EXIT: usize = 299;
 
 // lParam flags of WM_QUERYENDSESSION / WM_ENDSESSION
@@ -58,6 +63,8 @@ const NIN_KEYSELECT: u32 = NIN_SELECT | 0x1;
 /// shutdown (a "these apps are preventing shutdown" screen stays visible).
 const SHUTDOWN_LEVEL: u32 = 0x100;
 
+const GITHUB_URL: &str = "https://github.com/pokoblin/DdcSwitch";
+
 struct App {
     hwnd: HWND,
     cfg: Config,
@@ -69,6 +76,7 @@ thread_local! {
 }
 static TASKBAR_CREATED: AtomicU32 = AtomicU32::new(0);
 static STARTED: OnceLock<Instant> = OnceLock::new();
+static ABOUT_OPEN: AtomicBool = AtomicBool::new(false);
 
 fn with_app<R>(f: impl FnOnce(&mut App) -> R) -> Option<R> {
     APP.with(|a| a.try_borrow_mut().ok().and_then(|mut a| a.as_mut().map(f)))
@@ -526,6 +534,7 @@ fn show_menu(hwnd: HWND) {
         add(MF_STRING, ID_SETTINGS, t().menu_settings);
         add(MF_STRING, ID_OPEN_LOG, t().menu_open_log);
         add(MF_SEPARATOR, 0, "");
+        add(MF_STRING, ID_ABOUT, t().menu_about);
         add(MF_STRING, ID_EXIT, t().menu_exit);
         let _ = SetMenuDefaultItem(menu, ID_SETTINGS as u32, 0);
 
@@ -551,6 +560,7 @@ fn show_menu(hwnd: HWND) {
             }
             ID_SETTINGS => settings::open(cfg),
             ID_OPEN_LOG => open_log(),
+            ID_ABOUT => show_about(hwnd),
             ID_EXIT => {
                 let _ = DestroyWindow(hwnd);
             }
@@ -571,4 +581,55 @@ pub fn open_log() {
     unsafe {
         ShellExecuteW(None, w!("open"), &HSTRING::from(path.as_os_str()), None, None, SW_SHOWNORMAL);
     }
+}
+
+/// The standard Windows task dialog with the version and a link to the repository.
+fn show_about(hwnd: HWND) {
+    if ABOUT_OPEN.swap(true, Ordering::SeqCst) {
+        return; // already open (the tray menu stays usable while it is shown)
+    }
+    let tr = t();
+    let title = HSTRING::from(tr.menu_about);
+    let heading = HSTRING::from("DdcSwitch");
+    let content = HSTRING::from(format!(
+        "{}\n\n{}\n\n<a href=\"{GITHUB_URL}\">{}</a>",
+        fmt(tr.about_version, &[&env!("CARGO_PKG_VERSION")]),
+        tr.about_description,
+        GITHUB_URL.trim_start_matches("https://")
+    ));
+    let footer = HSTRING::from("© 2026 pokoblin · MIT License");
+    unsafe {
+        let icon = icon::create(GetSystemMetrics(SM_CXICON));
+        let mut cfg = TASKDIALOGCONFIG {
+            cbSize: std::mem::size_of::<TASKDIALOGCONFIG>() as u32,
+            hwndParent: hwnd,
+            dwFlags: TDF_ENABLE_HYPERLINKS | TDF_USE_HICON_MAIN | TDF_ALLOW_DIALOG_CANCELLATION,
+            dwCommonButtons: TDCBF_OK_BUTTON,
+            pszWindowTitle: PCWSTR(title.as_ptr()),
+            pszMainInstruction: PCWSTR(heading.as_ptr()),
+            pszContent: PCWSTR(content.as_ptr()),
+            pszFooter: PCWSTR(footer.as_ptr()),
+            pfCallback: Some(about_callback),
+            ..Default::default()
+        };
+        cfg.Anonymous1.hMainIcon = icon;
+        let _ = SetForegroundWindow(hwnd);
+        let _ = TaskDialogIndirect(&cfg, None, None, None);
+        let _ = DestroyIcon(icon);
+    }
+    ABOUT_OPEN.store(false, Ordering::SeqCst);
+}
+
+unsafe extern "system" fn about_callback(
+    _hwnd: HWND,
+    msg: TASKDIALOG_NOTIFICATIONS,
+    _wparam: WPARAM,
+    lparam: LPARAM,
+    _data: isize,
+) -> HRESULT {
+    if msg == TDN_HYPERLINK_CLICKED {
+        // lParam is the href of the clicked link.
+        ShellExecuteW(None, w!("open"), PCWSTR(lparam.0 as *const u16), None, None, SW_SHOWNORMAL);
+    }
+    S_OK
 }

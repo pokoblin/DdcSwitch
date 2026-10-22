@@ -1,6 +1,6 @@
 [package]
 name = "ddc-switch"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 description = "Tray app that switches the monitor input source over DDC/CI (hotkeys + before shutdown)"
 build = "build.rs"
