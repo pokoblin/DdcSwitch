@@ -46,7 +46,7 @@ Ein Monitor, zwei Rechner – etwa ein Windows-PC an HDMI und ein MacBook an USB
 - **Optional auch vor dem Energiesparmodus.**
 - **Tray-Menü** – Eingänge umschalten, das Umschalten beim Herunterfahren und den Autostart ein- und ausschalten, Einstellungen und Protokoll öffnen.
 - **Kennt Ihren Monitor** – liest den aktuellen Eingang und die vom Monitor gemeldeten Eingänge aus, damit Sie keine Codes raten müssen.
-- **Klein und nativ** – eine einzige EXE mit rund 400 KB, keine Laufzeitumgebung, keine Administratorrechte, keine externen Tools. DdcSwitch ruft die Monitor Configuration API von Windows (`dxva2.dll`) direkt auf.
+- **Klein und nativ** – eine einzige EXE mit rund 600 KB, keine Laufzeitumgebung, keine Administratorrechte, keine externen Tools. DdcSwitch ruft die Monitor Configuration API von Windows (`dxva2.dll`) direkt auf.
 - **10 Sprachen** – English, 简体中文, 繁體中文, 日本語, 한국어, Español, Français, Deutsch, Português (Brasil), Русский. Standardmäßig wird die Anzeigesprache von Windows verwendet.
 - **Nachvollziehbar** – jede Entscheidung beim Herunterfahren landet in einem Protokoll, das Sie über das Tray-Menü öffnen können.
 
@@ -57,7 +57,9 @@ Ein Monitor, zwei Rechner – etwa ein Windows-PC an HDMI und ein MacBook an USB
 
 ## Installation
 
-DdcSwitch wird mit [Rust](https://rustup.rs/) (MSVC-Toolchain) aus dem Quellcode gebaut:
+Laden Sie `DdcSwitch-<Version>-windows-x64.zip` aus dem [neuesten Release](https://github.com/pokoblin/DdcSwitch/releases/latest) herunter, entpacken Sie es in einen dauerhaften Ordner (z. B. `%LOCALAPPDATA%\Programs\DdcSwitch`) und starten Sie `DdcSwitch.exe`. Die EXE ist nicht signiert, daher kann SmartScreen beim ersten Start warnen: Wählen Sie *Weitere Informationen* → *Trotzdem ausführen*.
+
+Zum Selbstbauen benötigen Sie [Rust](https://rustup.rs/) (MSVC-Toolchain):
 
 ```powershell
 git clone https://github.com/pokoblin/DdcSwitch.git

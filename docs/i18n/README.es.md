@@ -46,7 +46,7 @@ Un monitor y dos equipos: por ejemplo, un PC con Windows por HDMI y un MacBook p
 - **Cambio opcional antes de suspender.**
 - **Menú de la bandeja** – cambia de entrada, activa o desactiva el cambio al apagar y el inicio con Windows, y abre la configuración y el registro.
 - **Conoce tu monitor** – lee la entrada actual y las entradas que anuncia el monitor, así que no tienes que adivinar códigos.
-- **Pequeño y nativo** – un único ejecutable de unos 400 KB, sin runtime, sin permisos de administrador y sin herramientas externas. Llama directamente a la Monitor Configuration API de Windows (`dxva2.dll`).
+- **Pequeño y nativo** – un único ejecutable de unos 600 KB, sin runtime, sin permisos de administrador y sin herramientas externas. Llama directamente a la Monitor Configuration API de Windows (`dxva2.dll`).
 - **10 idiomas** – English, 简体中文, 繁體中文, 日本語, 한국어, Español, Français, Deutsch, Português (Brasil), Русский. Por defecto usa el idioma de visualización de Windows.
 - **Transparente** – cada decisión tomada al apagar queda anotada en un registro que puedes abrir desde la bandeja.
 
@@ -57,7 +57,9 @@ Un monitor y dos equipos: por ejemplo, un PC con Windows por HDMI y un MacBook p
 
 ## Instalación
 
-DdcSwitch se compila desde el código fuente con [Rust](https://rustup.rs/) (toolchain MSVC):
+Descarga `DdcSwitch-<versión>-windows-x64.zip` desde la [última versión](https://github.com/pokoblin/DdcSwitch/releases/latest), extráelo en una carpeta permanente (por ejemplo `%LOCALAPPDATA%\Programs\DdcSwitch`) y ejecuta `DdcSwitch.exe`. El exe no está firmado, así que SmartScreen puede avisarte la primera vez: elige *Más información* → *Ejecutar de todas formas*.
+
+Para compilarlo tú mismo necesitas [Rust](https://rustup.rs/) (toolchain MSVC):
 
 ```powershell
 git clone https://github.com/pokoblin/DdcSwitch.git

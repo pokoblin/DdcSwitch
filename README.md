@@ -46,7 +46,7 @@ One monitor, two computers – say a Windows PC on HDMI and a MacBook on USB‑C
 - **Optional switch before sleep.**
 - **Tray menu** – switch inputs, toggle the shutdown switch and start-up, open settings and the log.
 - **Knows your monitor** – reads the current input and the inputs the monitor reports, so you don't have to guess codes.
-- **Small and native** – one ~400 KB executable, no runtime, no admin rights, no external tools. It calls the Windows Monitor Configuration API (`dxva2.dll`) directly.
+- **Small and native** – one ~600 KB executable, no runtime, no admin rights, no external tools. It calls the Windows Monitor Configuration API (`dxva2.dll`) directly.
 - **10 languages** – English, 简体中文, 繁體中文, 日本語, 한국어, Español, Français, Deutsch, Português (Brasil), Русский. Follows the Windows display language by default.
 - **Transparent** – every shutdown decision is written to a log you can open from the tray.
 
@@ -57,7 +57,9 @@ One monitor, two computers – say a Windows PC on HDMI and a MacBook on USB‑C
 
 ## Installation
 
-DdcSwitch is built from source with [Rust](https://rustup.rs/) (MSVC toolchain):
+Download `DdcSwitch-<version>-windows-x64.zip` from the [latest release](https://github.com/pokoblin/DdcSwitch/releases/latest), extract it to a permanent folder (for example `%LOCALAPPDATA%\Programs\DdcSwitch`) and run `DdcSwitch.exe`. The exe isn't code-signed, so SmartScreen may warn you the first time: choose *More info* → *Run anyway*.
+
+To build it yourself you need [Rust](https://rustup.rs/) (MSVC toolchain):
 
 ```powershell
 git clone https://github.com/pokoblin/DdcSwitch.git

@@ -46,7 +46,7 @@ Un écran, deux ordinateurs  par exemple un PC Windows en HDMI et un MacBook e
 - **Bascule facultative avant la mise en veille.**
 - **Menu de la zone de notification** – changer d'entrée, activer ou désactiver la bascule à l'arrêt et le lancement au démarrage, ouvrir les paramètres et le journal.
 - **Connaît votre écran** – lit l'entrée actuelle et les entrées annoncées par l'écran  inutile de deviner les codes.
-- **Léger et natif** – un seul exécutable d'environ 400 Ko, sans runtime, sans droits d'administrateur, sans outil externe. Il appelle directement la Monitor Configuration API de Windows (`dxva2.dll`).
+- **Léger et natif** – un seul exécutable d'environ 600 Ko, sans runtime, sans droits d'administrateur, sans outil externe. Il appelle directement la Monitor Configuration API de Windows (`dxva2.dll`).
 - **10 langues** – English, 简体中文, 繁體中文, 日本語, 한국어, Español, Français, Deutsch, Português (Brasil), Русский. Suit par défaut la langue d'affichage de Windows.
 - **Transparent** – chaque décision prise à l'arrêt est consignée dans un journal que vous pouvez ouvrir depuis la zone de notification.
 
@@ -57,7 +57,9 @@ Un écran, deux ordinateurs  par exemple un PC Windows en HDMI et un MacBook e
 
 ## Installation
 
-DdcSwitch se compile depuis les sources avec [Rust](https://rustup.rs/) (chaîne d'outils MSVC) 
+Téléchargez `DdcSwitch-<version>-windows-x64.zip` depuis la [dernière version](https://github.com/pokoblin/DdcSwitch/releases/latest), extrayez-le dans un dossier permanent (par exemple `%LOCALAPPDATA%\Programs\DdcSwitch`) et lancez `DdcSwitch.exe`. L'exécutable n'est pas signé, SmartScreen peut donc afficher un avertissement la première fois : choisissez *Informations complémentaires* → *Exécuter quand même*.
+
+Pour le compiler vous-même, il vous faut [Rust](https://rustup.rs/) (chaîne d'outils MSVC) :
 
 ```powershell
 git clone https://github.com/pokoblin/DdcSwitch.git

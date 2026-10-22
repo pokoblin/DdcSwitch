@@ -46,7 +46,7 @@ O **DdcSwitch** conversa com o monitor via [DDC/CI](https://en.wikipedia.org/wik
 - **Troca opcional antes de suspender.**
 - **Menu da bandeja** – troque de entrada, ative ou desative a troca ao desligar e a inicialização com o Windows, abra as configurações e o log.
 - **Conhece o seu monitor** – lê a entrada atual e as entradas que o monitor informa, para você não precisar adivinhar códigos.
-- **Pequeno e nativo** – um único executável de ~400 KB, sem runtime, sem direitos de administrador, sem ferramentas externas. Ele chama diretamente a Monitor Configuration API do Windows (`dxva2.dll`).
+- **Pequeno e nativo** – um único executável de ~600 KB, sem runtime, sem direitos de administrador, sem ferramentas externas. Ele chama diretamente a Monitor Configuration API do Windows (`dxva2.dll`).
 - **10 idiomas** – English, 简体中文, 繁體中文, 日本語, 한국어, Español, Français, Deutsch, Português (Brasil), Русский. Por padrão, segue o idioma de exibição do Windows.
 - **Transparente** – toda decisão tomada no desligamento é registrada em um log que você pode abrir pela bandeja.
 
@@ -57,7 +57,9 @@ O **DdcSwitch** conversa com o monitor via [DDC/CI](https://en.wikipedia.org/wik
 
 ## Instalação
 
-O DdcSwitch é compilado a partir do código-fonte com [Rust](https://rustup.rs/) (toolchain MSVC):
+Baixe `DdcSwitch-<versão>-windows-x64.zip` da [versão mais recente](https://github.com/pokoblin/DdcSwitch/releases/latest), extraia em uma pasta permanente (por exemplo `%LOCALAPPDATA%\Programs\DdcSwitch`) e execute `DdcSwitch.exe`. O exe não tem assinatura digital, então o SmartScreen pode exibir um aviso na primeira vez: escolha *Mais informações* → *Executar assim mesmo*.
+
+Para compilar você mesmo, é preciso ter o [Rust](https://rustup.rs/) (toolchain MSVC):
 
 ```powershell
 git clone https://github.com/pokoblin/DdcSwitch.git

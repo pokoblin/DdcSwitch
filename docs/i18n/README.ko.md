@@ -46,7 +46,7 @@
 - **절전 전 전환(선택 사항).**
 - **트레이 메뉴** – 입력 전환, 종료 시 전환과 Windows 시작 시 실행 켜기/끄기, 설정 및 로그 열기.
 - **모니터를 알아서 파악** – 현재 입력과 모니터가 보고하는 입력 목록을 읽어 오므로 코드를 추측할 필요가 없습니다.
-- **작고 네이티브** – 약 400 KB짜리 실행 파일 하나뿐이며, 런타임도 관리자 권한도 외부 도구도 필요 없습니다. Windows Monitor Configuration API(`dxva2.dll`)를 직접 호출합니다.
+- **작고 네이티브** – 약 600 KB짜리 실행 파일 하나뿐이며, 런타임도 관리자 권한도 외부 도구도 필요 없습니다. Windows Monitor Configuration API(`dxva2.dll`)를 직접 호출합니다.
 - **10개 언어** – English, 简体中文, 繁體中文, 日本語, 한국어, Español, Français, Deutsch, Português (Brasil), Русский. 기본적으로 Windows 표시 언어를 따릅니다.
 - **투명한 동작** – 종료 시 내린 모든 판단을 로그에 남기며, 트레이에서 바로 열어 볼 수 있습니다.
 
@@ -57,7 +57,9 @@
 
 ## 설치
 
-DdcSwitch는 [Rust](https://rustup.rs/)(MSVC 툴체인)로 소스에서 빌드합니다.
+[최신 릴리스](https://github.com/pokoblin/DdcSwitch/releases/latest)에서 `DdcSwitch-<버전>-windows-x64.zip`을 내려받아 고정된 폴더(예: `%LOCALAPPDATA%\Programs\DdcSwitch`)에 압축을 풀고 `DdcSwitch.exe`를 실행하세요. exe에 코드 서명이 없어 처음 실행할 때 SmartScreen 경고가 나올 수 있습니다. '추가 정보' → '실행'을 선택하세요.
+
+직접 빌드하려면 [Rust](https://rustup.rs/)(MSVC 툴체인)가 필요합니다:
 
 ```powershell
 git clone https://github.com/pokoblin/DdcSwitch.git

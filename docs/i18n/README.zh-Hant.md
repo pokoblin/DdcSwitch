@@ -46,7 +46,7 @@
 - **可選：睡眠前切換。**
 - **系統匣選單**：切換輸入來源、開關關機切換與開機自動執行、開啟設定和記錄。
 - **認得你的螢幕**：讀取目前輸入來源，以及螢幕回報支援的輸入來源，不必猜代碼。
-- **輕巧、原生**：單一約 400 KB 的執行檔，不需執行階段、不需系統管理員權限、不依賴外部工具，直接呼叫 Windows 螢幕設定 API（`dxva2.dll`）。
+- **輕巧、原生**：單一約 600 KB 的執行檔，不需執行階段、不需系統管理員權限、不依賴外部工具，直接呼叫 Windows 螢幕設定 API（`dxva2.dll`）。
 - **10 種語言**：English、简体中文、繁體中文、日本語、한국어、Español、Français、Deutsch、Português (Brasil)、Русский。預設跟隨 Windows 顯示語言。
 - **過程透明**：每次關機時的判斷都會寫入記錄，可從系統匣直接開啟。
 
@@ -57,7 +57,9 @@
 
 ## 安裝
 
-DdcSwitch 需使用 [Rust](https://rustup.rs/)（MSVC 工具鏈）從原始碼建置：
+從[最新發行版](https://github.com/pokoblin/DdcSwitch/releases/latest)下載 `DdcSwitch-<版本>-windows-x64.zip`，解壓縮到固定的資料夾（例如 `%LOCALAPPDATA%\Programs\DdcSwitch`），然後執行 `DdcSwitch.exe`。程式沒有程式碼簽章，第一次執行時 SmartScreen 可能會發出警告：按一下「其他資訊」→「仍要執行」。
+
+如果想自行建置，需要安裝 [Rust](https://rustup.rs/)（MSVC 工具鏈）：
 
 ```powershell
 git clone https://github.com/pokoblin/DdcSwitch.git

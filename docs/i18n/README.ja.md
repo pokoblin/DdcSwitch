@@ -46,7 +46,7 @@
 - **スリープ前の切り替えにも対応（オプション）。**
 - **トレイメニュー** – 入力の切り替え、シャットダウン時の切り替えと自動起動のオン／オフ、設定とログの表示。
 - **モニターを自動で把握** – 現在の入力とモニターが報告する対応入力を読み取るので、コードを推測する必要はありません。
-- **小さくネイティブ** – 約 400 KB の実行ファイル 1 つだけ。ランタイム、管理者権限、外部ツールは不要です。Windows の Monitor Configuration API（`dxva2.dll`）を直接呼び出します。
+- **小さくネイティブ** – 約 600 KB の実行ファイル 1 つだけ。ランタイム、管理者権限、外部ツールは不要です。Windows の Monitor Configuration API（`dxva2.dll`）を直接呼び出します。
 - **10 言語** – English、简体中文、繁體中文、日本語、한국어、Español、Français、Deutsch、Português (Brasil)、Русский。既定では Windows の表示言語に従います。
 - **動作が見える** – シャットダウン時の判断はすべてログに記録され、トレイから開けます。
 
@@ -57,7 +57,9 @@
 
 ## インストール
 
-DdcSwitch は [Rust](https://rustup.rs/)（MSVC ツールチェーン）を使ってソースからビルドします。
+[最新リリース](https://github.com/pokoblin/DdcSwitch/releases/latest)から `DdcSwitch-<バージョン>-windows-x64.zip` をダウンロードし、決まったフォルダー（例: `%LOCALAPPDATA%\Programs\DdcSwitch`）に展開して `DdcSwitch.exe` を実行します。exe にはコード署名がないため、初回は SmartScreen の警告が出ることがあります。「詳細情報」→「実行」を選んでください。
+
+自分でビルドする場合は [Rust](https://rustup.rs/)（MSVC ツールチェーン）が必要です:
 
 ```powershell
 git clone https://github.com/pokoblin/DdcSwitch.git
