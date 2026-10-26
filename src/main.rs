@@ -65,6 +65,10 @@ const SHUTDOWN_LEVEL: u32 = 0x100;
 
 const GITHUB_URL: &str = "https://github.com/pokoblin/DdcSwitch";
 
+/// How long to keep looking for event 1074 at shutdown, and how often.
+const EVENT_1074_WAIT: Duration = Duration::from_secs(3);
+const EVENT_1074_POLL: Duration = Duration::from_millis(200);
+
 struct App {
     hwnd: HWND,
     cfg: Config,
@@ -346,18 +350,22 @@ fn on_end_session(hwnd: HWND, flags: u32) {
         // Only look at events raised while we've been running (max. 10 minutes back).
         let uptime = STARTED.get().map(|s| s.elapsed().as_millis() as u64).unwrap_or(0);
         let window = uptime.clamp(5_000, 600_000);
-        let mut kind = shutdown::Kind::Unknown;
-        for attempt in 0..4 {
-            if attempt > 0 {
-                std::thread::sleep(Duration::from_millis(250));
-            }
+        // Event 1074 can land in the log a little after we are notified (~0.6 s has
+        // been seen), so keep looking for a while before treating it as unknown.
+        let started = Instant::now();
+        let mut checks = 0;
+        let (kind, detail) = loop {
+            checks += 1;
             let (k, detail) = shutdown::detect(window);
-            applog::log(format!("    shutdown type: {k:?} — {detail}"));
-            kind = k;
-            if k != shutdown::Kind::Unknown {
-                break;
+            if k != shutdown::Kind::Unknown || started.elapsed() >= EVENT_1074_WAIT {
+                break (k, detail);
             }
-        }
+            std::thread::sleep(EVENT_1074_POLL);
+        };
+        applog::log(format!(
+            "    shutdown type: {kind:?} after {checks} check(s), {} ms — {detail}",
+            started.elapsed().as_millis()
+        ));
         if kind == shutdown::Kind::Restart {
             applog::log("    this is a restart, input not switched");
             return;
