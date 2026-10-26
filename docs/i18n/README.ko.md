@@ -78,9 +78,7 @@ Windows SDK(`rc.exe`)가 설치되어 있으면 아이콘과 버전 정보가 ex
 <summary>제거</summary>
 
 ```powershell
-& "$env:LOCALAPPDATA\Programs\DdcSwitch\DdcSwitch.exe" --quit
-Remove-ItemProperty HKCU:\Software\Microsoft\Windows\CurrentVersion\Run -Name DdcSwitch -ErrorAction SilentlyContinue
-Remove-Item -Recurse "$env:LOCALAPPDATA\Programs\DdcSwitch", "$env:APPDATA\DdcSwitch"
+& "$env:LOCALAPPDATA\Programs\DdcSwitch\uninstall.ps1" -RemoveSettings
 ```
 </details>
 

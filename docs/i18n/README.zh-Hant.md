@@ -78,9 +78,7 @@ cd DdcSwitch
 <summary>解除安裝</summary>
 
 ```powershell
-& "$env:LOCALAPPDATA\Programs\DdcSwitch\DdcSwitch.exe" --quit
-Remove-ItemProperty HKCU:\Software\Microsoft\Windows\CurrentVersion\Run -Name DdcSwitch -ErrorAction SilentlyContinue
-Remove-Item -Recurse "$env:LOCALAPPDATA\Programs\DdcSwitch", "$env:APPDATA\DdcSwitch"
+& "$env:LOCALAPPDATA\Programs\DdcSwitch\uninstall.ps1" -RemoveSettings
 ```
 </details>
 
